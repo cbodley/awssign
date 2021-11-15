@@ -88,4 +88,65 @@ struct canonical_name_less {
   }
 };
 
+// write out the sorted headers in canonical format
+template <typename HeaderIterator, // forward canonical_header iterator
+          typename Writer> // void(const char*, const char*)
+std::size_t canonical_headers(HeaderIterator header0,
+                              HeaderIterator headerN,
+                              Writer&& out)
+{
+  std::size_t bytes = 0;
+  std::string_view last_name;
+  for (auto o = header0; o != headerN; ++o) {
+    constexpr auto iless = detail::canonical_name_less{};
+    if (!iless(last_name, o->name)) {
+      // comma-separate values with the same header name
+      bytes += emit(',', out);
+      bytes += canonical_header_value(o->value.begin(),
+                                      o->value.end(), out);
+    } else {
+      if (!last_name.empty()) {
+        // finish the previous line
+        bytes += emit('\n', out);
+      }
+      last_name = o->name;
+      // write name:value
+      bytes += canonical_header_name(o->name.begin(),
+                                     o->name.end(), out);
+      bytes += emit(':', out);
+      bytes += canonical_header_value(o->value.begin(),
+                                      o->value.end(), out);
+    }
+  }
+  if (!last_name.empty()) {
+    // finish the last line
+    bytes += emit('\n', out);
+  }
+  return bytes;
+}
+
+// write out the sorted header names, separated by semicolon
+template <typename HeaderIterator, // forward canonical_header iterator
+          typename Writer> // void(const char*, const char*)
+std::size_t signed_headers(HeaderIterator header0,
+                           HeaderIterator headerN,
+                           Writer&& out)
+{
+  std::size_t bytes = 0;
+  std::string_view last_name;
+  for (auto o = header0; o != headerN; ++o) {
+    constexpr auto iless = detail::canonical_name_less{};
+    if (!iless(last_name, o->name)) {
+      continue; // skip duplicate header names
+    }
+    last_name = o->name;
+    if (bytes) { // separate header names with ;
+      bytes += emit(';', out);
+    }
+    bytes += canonical_header_name(o->name.begin(),
+                                   o->name.end(), out);
+  }
+  return bytes;
+}
+
 } // namespace awssign::v4::detail

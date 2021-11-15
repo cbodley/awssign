@@ -52,23 +52,23 @@ TEST(canonical_headers, value)
   EXPECT_EQ("two words", canonical_value("   two\n  \twords   "));
 }
 
-TEST(canonical_headers, empty)
+TEST(canonical_signed_headers, empty)
 {
   const header_type* headers = nullptr;
   std::string result;
-  v4::canonical_headers(headers, headers, capture{result});
-  EXPECT_EQ("", result);
+  v4::canonical_signed_headers(headers, headers, capture{result});
+  EXPECT_EQ("\n", result);
 }
 
-TEST(canonical_headers, header)
+TEST(canonical_signed_headers, header)
 {
   const auto header = header_type{"Name", " value\t"};
   std::string result;
-  v4::canonical_headers(&header, &header + 1, capture{result});
-  EXPECT_EQ("name:value\n", result);
+  v4::canonical_signed_headers(&header, &header + 1, capture{result});
+  EXPECT_EQ("name:value\n\nname", result);
 }
 
-TEST(canonical_headers, multiple_values)
+TEST(canonical_signed_headers, multiple_values)
 {
   const header_type headers[] = {
     {"name1", "value1"},
@@ -76,12 +76,13 @@ TEST(canonical_headers, multiple_values)
     {"NAME1", "VALUE1"},
   };
   std::string result;
-  v4::canonical_headers(std::begin(headers), std::end(headers),
-                        capture{result});
-  EXPECT_EQ("name1:value1,VALUE1\nname2:value2\n", result);
+  v4::canonical_signed_headers(std::begin(headers), std::end(headers),
+                               capture{result});
+  EXPECT_EQ("name1:value1,VALUE1\nname2:value2\n\n"
+            "name1;name2", result);
 }
 
-TEST(canonical_headers, aws_example)
+TEST(canonical_signed_headers, aws_example)
 {
   const header_type headers[] = {
     {"Host", "iam.amazonaws.com"},
@@ -91,16 +92,17 @@ TEST(canonical_headers, aws_example)
     {"My-Header2", "    \"a   b   c\"  "},
   };
   std::string result;
-  v4::canonical_headers(std::begin(headers), std::end(headers),
-                        capture{result});
+  v4::canonical_signed_headers(std::begin(headers), std::end(headers),
+                               capture{result});
   EXPECT_EQ("content-type:application/x-www-form-urlencoded; charset=utf-8\n"
             "host:iam.amazonaws.com\n"
             "my-header1:a b c\n"
             "my-header2:\"a b c\"\n"
-            "x-amz-date:20150830T123600Z\n", result);
+            "x-amz-date:20150830T123600Z\n\n"
+            "content-type;host;my-header1;my-header2;x-amz-date", result);
 }
 
-TEST(canonical_headers, aws4_testsuite_get_header_key_duplicate)
+TEST(canonical_signed_headers, aws4_testsuite_get_header_key_duplicate)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -110,14 +112,15 @@ TEST(canonical_headers, aws4_testsuite_get_header_key_duplicate)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  v4::canonical_headers(std::begin(headers), std::end(headers),
-                        capture{result});
+  v4::canonical_signed_headers(std::begin(headers), std::end(headers),
+                               capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value2,value2,value1\n"
-            "x-amz-date:20150830T123600Z\n", result);
+            "x-amz-date:20150830T123600Z\n\n"
+            "host;my-header1;x-amz-date", result);
 }
 
-TEST(canonical_headers, aws4_testsuite_get_header_value_multiline)
+TEST(canonical_signed_headers, aws4_testsuite_get_header_value_multiline)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -125,14 +128,15 @@ TEST(canonical_headers, aws4_testsuite_get_header_value_multiline)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  v4::canonical_headers(std::begin(headers), std::end(headers),
-                        capture{result});
+  v4::canonical_signed_headers(std::begin(headers), std::end(headers),
+                               capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value1 value2 value3\n"
-            "x-amz-date:20150830T123600Z\n", result);
+            "x-amz-date:20150830T123600Z\n\n"
+            "host;my-header1;x-amz-date", result);
 }
 
-TEST(canonical_headers, aws4_testsuite_get_header_value_order)
+TEST(canonical_signed_headers, aws4_testsuite_get_header_value_order)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -143,14 +147,15 @@ TEST(canonical_headers, aws4_testsuite_get_header_value_order)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  v4::canonical_headers(std::begin(headers), std::end(headers),
-                        capture{result});
+  v4::canonical_signed_headers(std::begin(headers), std::end(headers),
+                               capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value4,value1,value3,value2\n"
-            "x-amz-date:20150830T123600Z\n", result);
+            "x-amz-date:20150830T123600Z\n\n"
+            "host;my-header1;x-amz-date", result);
 }
 
-TEST(canonical_headers, aws4_testsuite_get_header_value_trim)
+TEST(canonical_signed_headers, aws4_testsuite_get_header_value_trim)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -159,12 +164,13 @@ TEST(canonical_headers, aws4_testsuite_get_header_value_trim)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  v4::canonical_headers(std::begin(headers), std::end(headers),
-                        capture{result});
+  v4::canonical_signed_headers(std::begin(headers), std::end(headers),
+                               capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value1\n"
             "my-header2:\"a b c\"\n"
-            "x-amz-date:20150830T123600Z\n", result);
+            "x-amz-date:20150830T123600Z\n\n"
+            "host;my-header1;my-header2;x-amz-date", result);
 }
 
 } // namespace awssign
