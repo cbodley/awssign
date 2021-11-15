@@ -1,4 +1,4 @@
-#include <awssign/v4.hpp>
+#include <awssign/v4/s3_canonical_uri.hpp>
 #include <gtest/gtest.h>
 
 namespace awssign {
