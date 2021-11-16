@@ -23,20 +23,20 @@ std::size_t canonical_request(std::string_view method,
   std::size_t bytes = 0;
   // CanonicalRequest =
   //   HTTPRequestMethod + '\n' +
-  bytes += emit(method.begin(), method.end(), out);
+  bytes += emit(method, out);
   bytes += emit('\n', out);
   //   CanonicalURI + '\n' +
-  canonical_uri(uri_path.begin(), uri_path.end(), out);
+  bytes += canonical_uri(uri_path.begin(), uri_path.end(), out);
   bytes += emit('\n', out);
   //   CanonicalQueryString + '\n' +
-  canonical_query(query.begin(), query.end(), out);
+  bytes += canonical_query(query.begin(), query.end(), out);
   bytes += emit('\n', out);
   //   CanonicalHeaders + '\n' +
   //   SignedHeaders + '\n' +
-  canonical_signed_headers(header0, headerN, out);
+  bytes += canonical_signed_headers(header0, headerN, out);
   bytes += emit('\n', out);
   //   HexEncode(Hash(RequestPayload))
-  bytes += emit(payload_hash.begin(), payload_hash.end(), out);
+  bytes += emit(payload_hash, out);
   return bytes;
 }
 

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <iterator>
+#include <string_view>
 
 namespace awssign::detail {
 
@@ -12,6 +13,14 @@ std::size_t emit(Iterator begin, Iterator end, Writer&& out)
 {
   out(begin, end);
   return std::distance(begin, end);
+}
+
+// write a string_view to the output
+template <typename Writer> // void(Iterator, Iterator)
+std::size_t emit(std::string_view str, Writer&& out)
+{
+  out(str.begin(), str.end());
+  return str.size();
 }
 
 // write a single character to the output
