@@ -2,7 +2,7 @@
 
 #include <string_view>
 #include <awssign/detail/emit.hpp>
-#include <awssign/v4/canonical_headers.hpp>
+#include <awssign/v4/detail/canonical_headers.hpp>
 #include <awssign/v4/canonical_query.hpp>
 #include <awssign/v4/canonical_uri.hpp>
 
@@ -32,8 +32,10 @@ std::size_t canonical_request(std::string_view method,
   bytes += canonical_query(query.begin(), query.end(), out);
   bytes += emit('\n', out);
   //   CanonicalHeaders + '\n' +
+  bytes += canonical_headers(header0, headerN, out);
+  bytes += emit('\n', out);
   //   SignedHeaders + '\n' +
-  bytes += canonical_signed_headers(header0, headerN, out);
+  bytes += signed_headers(header0, headerN, out);
   bytes += emit('\n', out);
   //   HexEncode(Hash(RequestPayload))
   bytes += emit(payload_hash, out);

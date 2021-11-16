@@ -1,4 +1,4 @@
-#include <awssign/v4/canonical_headers.hpp>
+#include <awssign/v4/detail/canonical_headers.hpp>
 #include <gtest/gtest.h>
 
 namespace awssign {

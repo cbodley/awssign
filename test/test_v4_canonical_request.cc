@@ -36,10 +36,12 @@ TEST(canonical_request, aws4_testsuite_get_header_key_duplicate)
     {"My-Header1", "value1"},
     {"X-Amz-Date", "20150830T123600Z"},
   };
+  v4::detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = v4::detail::sorted_canonical_headers(
+      std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", std::begin(headers),
-                        std::end(headers), empty_payload_hash,
-                        capture{result});
+  v4::canonical_request("GET", "/", "", canonical, canonical_end,
+                        empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -58,10 +60,12 @@ TEST(canonical_request, aws4_testsuite_get_header_value_multiline)
     {"My-Header1", "value1\n  value2\n     value3"},
     {"X-Amz-Date", "20150830T123600Z"},
   };
+  v4::detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = v4::detail::sorted_canonical_headers(
+      std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", std::begin(headers),
-                        std::end(headers), empty_payload_hash,
-                        capture{result});
+  v4::canonical_request("GET", "/", "", canonical, canonical_end,
+                        empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -83,10 +87,12 @@ TEST(canonical_request, aws4_testsuite_get_header_value_order)
     {"My-Header1", "value2"},
     {"X-Amz-Date", "20150830T123600Z"},
   };
+  v4::detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = v4::detail::sorted_canonical_headers(
+      std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", std::begin(headers),
-                        std::end(headers), empty_payload_hash,
-                        capture{result});
+  v4::canonical_request("GET", "/", "", canonical, canonical_end,
+                        empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -106,10 +112,12 @@ TEST(canonical_request, aws4_testsuite_get_header_value_trim)
     {"My-Header2", " \"a   b   c\""},
     {"X-Amz-Date", "20150830T123600Z"},
   };
+  v4::detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = v4::detail::sorted_canonical_headers(
+      std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", std::begin(headers),
-                        std::end(headers), empty_payload_hash,
-                        capture{result});
+  v4::canonical_request("GET", "/", "", canonical, canonical_end,
+                        empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
