@@ -1,7 +1,7 @@
-#include <awssign/v4/canonical_query.hpp>
+#include <awssign/v4/detail/canonical_query.hpp>
 #include <gtest/gtest.h>
 
-namespace awssign {
+namespace awssign::v4 {
 
 struct capture {
   std::string& value;
@@ -15,7 +15,7 @@ struct capture {
 std::string canonicalize(std::string_view name)
 {
   std::string result;
-  v4::canonical_query(name.begin(), name.end(), capture{result});
+  detail::canonical_query(name.begin(), name.end(), capture{result});
   return result;
 }
 
@@ -63,4 +63,4 @@ TEST(canonical_query, aws4_testsuite_vanilla_utf8_query)
   EXPECT_EQ("%E1%88%B4=bar", canonicalize("ሴ=bar"));
 }
 
-} // namespace awssign
+} // namespace awssign::v4

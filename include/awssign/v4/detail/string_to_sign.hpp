@@ -3,9 +3,7 @@
 #include <string_view>
 #include <awssign/detail/emit.hpp>
 
-namespace awssign::v4 {
-
-namespace detail {
+namespace awssign::v4::detail {
 
 using awssign::detail::emit;
 
@@ -23,8 +21,6 @@ std::size_t scope(std::string_view date_YYYYMMDD, std::string_view region,
   return bytes;
 }
 
-} // namespace detail
-
 // write the string to sign
 template <typename Writer> // void(const char*, const char*)
 std::size_t string_to_sign(std::string_view hash_algorithm,
@@ -35,17 +31,16 @@ std::size_t string_to_sign(std::string_view hash_algorithm,
                            Writer&& out)
 {
   std::size_t bytes = 0;
-  constexpr auto aws4_hmac = std::string_view{"AWS4-HMAC-"};
-  bytes += detail::emit("AWS4-HMAC-", out);
-  bytes += detail::emit(hash_algorithm, out);
-  bytes += detail::emit('\n', out);
-  bytes += detail::emit(date_iso8601, out);
-  bytes += detail::emit('\n', out);
-  bytes += detail::scope(date_iso8601.substr(0, 8), // YYYYMMDD
-                         region, service, out);
-  bytes += detail::emit('\n', out);
-  bytes += detail::emit(canonical_request_hash, out);
+  bytes += emit("AWS4-HMAC-", out);
+  bytes += emit(hash_algorithm, out);
+  bytes += emit('\n', out);
+  bytes += emit(date_iso8601, out);
+  bytes += emit('\n', out);
+  bytes += scope(date_iso8601.substr(0, 8), // YYYYMMDD
+                 region, service, out);
+  bytes += emit('\n', out);
+  bytes += emit(canonical_request_hash, out);
   return bytes;
 }
 
-} // namespace awssign::v4
+} // namespace awssign::v4::detail

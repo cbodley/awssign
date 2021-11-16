@@ -3,10 +3,10 @@
 #include <string_view>
 #include <awssign/detail/emit.hpp>
 #include <awssign/v4/detail/canonical_headers.hpp>
-#include <awssign/v4/canonical_query.hpp>
-#include <awssign/v4/canonical_uri.hpp>
+#include <awssign/v4/detail/canonical_query.hpp>
+#include <awssign/v4/detail/canonical_uri.hpp>
 
-namespace awssign::v4 {
+namespace awssign::v4::detail {
 
 /// write the canonical request to output
 template <typename HeaderIterator,
@@ -42,4 +42,4 @@ std::size_t canonical_request(std::string_view method,
   return bytes;
 }
 
-} // namespace awssign::v4
+} // namespace awssign::v4::detail

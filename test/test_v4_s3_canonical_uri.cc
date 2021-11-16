@@ -1,7 +1,7 @@
-#include <awssign/v4/s3_canonical_uri.hpp>
+#include <awssign/v4/detail/s3_canonical_uri.hpp>
 #include <gtest/gtest.h>
 
-namespace awssign {
+namespace awssign::v4 {
 
 struct capture {
   std::string& value;
@@ -15,7 +15,7 @@ struct capture {
 std::string canonicalize(std::string_view name)
 {
   std::string result;
-  v4::s3_canonical_uri(name.begin(), name.end(), capture{result});
+  detail::s3_canonical_uri(name.begin(), name.end(), capture{result});
   return result;
 }
 
@@ -63,4 +63,4 @@ TEST(s3_canonical_uri, utf8)
   EXPECT_EQ("/%E1%88%B4", canonicalize("/ሴ"));
 }
 
-} // namespace awssign
+} // namespace awssign::v4

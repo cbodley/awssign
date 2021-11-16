@@ -1,7 +1,7 @@
-#include <awssign/v4/canonical_request.hpp>
+#include <awssign/v4/detail/canonical_request.hpp>
 #include <gtest/gtest.h>
 
-namespace awssign {
+namespace awssign::v4 {
 
 struct capture {
   std::string& value;
@@ -36,12 +36,12 @@ TEST(canonical_request, aws4_testsuite_get_header_key_duplicate)
     {"My-Header1", "value1"},
     {"X-Amz-Date", "20150830T123600Z"},
   };
-  v4::detail::canonical_header canonical[sizeof(headers)];
-  const auto canonical_end = v4::detail::sorted_canonical_headers(
+  detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", canonical, canonical_end,
-                        empty_payload_hash, capture{result});
+  detail::canonical_request("GET", "/", "", canonical, canonical_end,
+                            empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -60,12 +60,12 @@ TEST(canonical_request, aws4_testsuite_get_header_value_multiline)
     {"My-Header1", "value1\n  value2\n     value3"},
     {"X-Amz-Date", "20150830T123600Z"},
   };
-  v4::detail::canonical_header canonical[sizeof(headers)];
-  const auto canonical_end = v4::detail::sorted_canonical_headers(
+  detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", canonical, canonical_end,
-                        empty_payload_hash, capture{result});
+  detail::canonical_request("GET", "/", "", canonical, canonical_end,
+                            empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -87,12 +87,12 @@ TEST(canonical_request, aws4_testsuite_get_header_value_order)
     {"My-Header1", "value2"},
     {"X-Amz-Date", "20150830T123600Z"},
   };
-  v4::detail::canonical_header canonical[sizeof(headers)];
-  const auto canonical_end = v4::detail::sorted_canonical_headers(
+  detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", canonical, canonical_end,
-                        empty_payload_hash, capture{result});
+  detail::canonical_request("GET", "/", "", canonical, canonical_end,
+                            empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -112,12 +112,12 @@ TEST(canonical_request, aws4_testsuite_get_header_value_trim)
     {"My-Header2", " \"a   b   c\""},
     {"X-Amz-Date", "20150830T123600Z"},
   };
-  v4::detail::canonical_header canonical[sizeof(headers)];
-  const auto canonical_end = v4::detail::sorted_canonical_headers(
+  detail::canonical_header canonical[sizeof(headers)];
+  const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  v4::canonical_request("GET", "/", "", canonical, canonical_end,
-                        empty_payload_hash, capture{result});
+  detail::canonical_request("GET", "/", "", canonical, canonical_end,
+                            empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -130,4 +130,4 @@ host;my-header1;my-header2;x-amz-date
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855)");
 }
 
-} // namespace awssign
+} // namespace awssign::v4

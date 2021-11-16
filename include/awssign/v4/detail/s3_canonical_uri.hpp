@@ -5,7 +5,11 @@
 #include <awssign/detail/percent_encode.hpp>
 #include <awssign/detail/transform_if.hpp>
 
-namespace awssign::v4 {
+namespace awssign::v4::detail {
+
+using awssign::detail::emit;
+using awssign::detail::percent_encode;
+using awssign::detail::transform_if;
 
 /// output an absolute uri path in s3-canonical form, which percent-encodes the
 /// path without any normalization
@@ -14,7 +18,7 @@ template <typename Iterator, // forward iterator with value_type=char
 std::size_t s3_canonical_uri(Iterator begin, Iterator end, Writer&& out)
 {
   if (begin == end) {
-    return awssign::detail::emit('/', out);
+    return emit('/', out);
   }
   constexpr auto need_escape = [] (unsigned char c) {
     switch (c) {
@@ -30,9 +34,9 @@ std::size_t s3_canonical_uri(Iterator begin, Iterator end, Writer&& out)
   };
   constexpr auto escape = [] (char c, Writer& out) {
     // spaces must be encoded as ' ', not '+'
-    return awssign::detail::percent_encode(c == '+' ? ' ' : c, out);
+    return percent_encode(c == '+' ? ' ' : c, out);
   };
-  return awssign::detail::transform_if(begin, end, need_escape, escape, out);
+  return transform_if(begin, end, need_escape, escape, out);
 }
 
-} // namespace awssign::v4
+} // namespace awssign::v4::detail
