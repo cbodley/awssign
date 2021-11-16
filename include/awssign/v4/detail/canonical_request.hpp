@@ -5,13 +5,15 @@
 #include <awssign/v4/detail/canonical_headers.hpp>
 #include <awssign/v4/detail/canonical_query.hpp>
 #include <awssign/v4/detail/canonical_uri.hpp>
+#include <awssign/v4/detail/s3_canonical_uri.hpp>
 
 namespace awssign::v4::detail {
 
 /// write the canonical request to output
 template <typename HeaderIterator,
           typename Writer> // void(const char*, const char*)
-std::size_t canonical_request(std::string_view method,
+std::size_t canonical_request(std::string_view service,
+                              std::string_view method,
                               std::string_view uri_path,
                               std::string_view query,
                               HeaderIterator header0,
@@ -26,7 +28,11 @@ std::size_t canonical_request(std::string_view method,
   bytes += emit(method, out);
   bytes += emit('\n', out);
   //   CanonicalURI + '\n' +
-  bytes += canonical_uri(uri_path.begin(), uri_path.end(), out);
+  if (service == "s3") {
+    bytes += s3_canonical_uri(uri_path.begin(), uri_path.end(), out);
+  } else {
+    bytes += canonical_uri(uri_path.begin(), uri_path.end(), out);
+  }
   bytes += emit('\n', out);
   //   CanonicalQueryString + '\n' +
   bytes += canonical_query(query.begin(), query.end(), out);
