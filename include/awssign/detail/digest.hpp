@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#include <openssl/hmac.h>
 
 namespace awssign::detail {
 
@@ -57,7 +58,8 @@ class digest {
   }
 };
 
-class hmac {
+// TODO: benchmark high-level EVP_* interfaces vs. low-level HMAC_*
+class hmac_evp {
   ::EVP_MD_CTX* ctx;
   const EVP_MD* md;
   ::EVP_PKEY* pkey = nullptr;
@@ -65,20 +67,20 @@ class hmac {
   static constexpr std::size_t max_size = EVP_MAX_MD_SIZE;
 
   // construct without a key; a key must be provided to init() before use
-  explicit hmac(const char* digest_name)
-      : hmac(::EVP_get_digestbyname(digest_name))
+  explicit hmac_evp(const char* digest_name)
+      : hmac_evp(::EVP_get_digestbyname(digest_name))
   {}
-  explicit hmac(const EVP_MD* md)
+  explicit hmac_evp(const EVP_MD* md)
       : ctx(::EVP_MD_CTX_new()), md(md) {
     if (!ctx || !md) {
       throw make_digest_error(::ERR_get_error());
     }
   }
 
-  hmac(const char* digest_name, const unsigned char* key, int len)
-      : hmac(::EVP_get_digestbyname(digest_name), key, len)
+  hmac_evp(const char* digest_name, const unsigned char* key, int len)
+      : hmac_evp(::EVP_get_digestbyname(digest_name), key, len)
   {}
-  hmac(const EVP_MD* md, const unsigned char* key, int len)
+  hmac_evp(const EVP_MD* md, const unsigned char* key, int len)
       : ctx(::EVP_MD_CTX_new()),
         md(md),
         pkey(::EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, nullptr, key, len)) {
@@ -89,7 +91,7 @@ class hmac {
       throw make_digest_error(::ERR_get_error());
     }
   }
-  ~hmac() {
+  ~hmac_evp() {
     ::EVP_PKEY_free(pkey);
     ::EVP_MD_CTX_free(ctx);
   }
@@ -120,6 +122,63 @@ class hmac {
   std::size_t finish(unsigned char* digest) {
     size_t len = max_size;
     if (!::EVP_DigestSignFinal(ctx, digest, &len)) {
+      throw make_digest_error(::ERR_get_error());
+    }
+    return len;
+  }
+};
+
+class hmac {
+  ::HMAC_CTX* ctx;
+  const EVP_MD* md;
+ public:
+  static constexpr std::size_t max_size = EVP_MAX_MD_SIZE;
+
+  // construct without a key; a key must be provided to init() before use
+  explicit hmac(const char* digest_name)
+      : hmac(::EVP_get_digestbyname(digest_name))
+  {}
+  explicit hmac(const EVP_MD* md)
+      : ctx(::HMAC_CTX_new()), md(md) {
+    if (!ctx || !md) {
+      throw make_digest_error(::ERR_get_error());
+    }
+    init();
+  }
+
+  hmac(const char* digest_name, const unsigned char* key, int len)
+      : hmac(::EVP_get_digestbyname(digest_name), key, len)
+  {}
+  hmac(const EVP_MD* md, const unsigned char* key, int len)
+      : ctx(::HMAC_CTX_new()), md(md) {
+    if (!ctx || !md) {
+      throw make_digest_error(::ERR_get_error());
+    }
+    init(key, len);
+  }
+  ~hmac() {
+    ::HMAC_CTX_free(ctx);
+  }
+  void init() {
+    if (!::HMAC_Init_ex(ctx, nullptr, 0, md, nullptr)) {
+      throw make_digest_error(::ERR_get_error());
+    }
+  }
+  // reinitialize with a new key
+  void init(const unsigned char* key, int len) {
+    if (!::HMAC_Init_ex(ctx, key, len, md, nullptr)) {
+      throw make_digest_error(::ERR_get_error());
+    }
+  }
+  void update(const void* data, std::size_t len) {
+    auto buf = reinterpret_cast<const unsigned char*>(data);
+    if (!::HMAC_Update(ctx, buf, len)) {
+      throw make_digest_error(::ERR_get_error());
+    }
+  }
+  std::size_t finish(unsigned char* digest) {
+    unsigned int len = max_size;
+    if (!::HMAC_Final(ctx, digest, &len)) {
       throw make_digest_error(::ERR_get_error());
     }
     return len;
