@@ -60,14 +60,24 @@ class digest {
 class hmac {
   ::EVP_MD_CTX* ctx;
   const EVP_MD* md;
-  ::EVP_PKEY* pkey;
+  ::EVP_PKEY* pkey = nullptr;
  public:
   static constexpr std::size_t max_size = EVP_MAX_MD_SIZE;
 
-  explicit hmac(const char* digest_name, const unsigned char* key, int len)
+  // construct without a key; a key must be provided to init() before use
+  explicit hmac(const char* digest_name)
+      : hmac(::EVP_get_digestbyname(digest_name))
+  {}
+  explicit hmac(const EVP_MD* md)
+      : ctx(::EVP_MD_CTX_new()), md(md) {
+    if (!ctx || !md) {
+      throw make_digest_error(::ERR_get_error());
+    }
+  }
+
+  hmac(const char* digest_name, const unsigned char* key, int len)
       : hmac(::EVP_get_digestbyname(digest_name), key, len)
   {}
-
   hmac(const EVP_MD* md, const unsigned char* key, int len)
       : ctx(::EVP_MD_CTX_new()),
         md(md),
@@ -75,13 +85,18 @@ class hmac {
     if (!ctx || !md || !pkey) {
       throw make_digest_error(::ERR_get_error());
     }
-    init();
+    if (!::EVP_DigestSignInit(ctx, nullptr, md, nullptr, pkey)) {
+      throw make_digest_error(::ERR_get_error());
+    }
   }
   ~hmac() {
     ::EVP_PKEY_free(pkey);
     ::EVP_MD_CTX_free(ctx);
   }
   void init() {
+    if (!::EVP_MD_CTX_reset(ctx)) {
+      throw make_digest_error(::ERR_get_error());
+    }
     if (!::EVP_DigestSignInit(ctx, nullptr, md, nullptr, pkey)) {
       throw make_digest_error(::ERR_get_error());
     }
