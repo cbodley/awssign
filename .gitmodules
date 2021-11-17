@@ -1,3 +1,6 @@
 [submodule "test/googletest"]
 	path = test/dependency/googletest
 	url = https://github.com/google/googletest.git
+[submodule "bench/dependency/benchmark"]
+	path = bench/dependency/benchmark
+	url = https://github.com/google/benchmark.git

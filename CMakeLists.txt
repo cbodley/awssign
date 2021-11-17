@@ -14,3 +14,4 @@ install(DIRECTORY include/awssign DESTINATION include)
 
 enable_testing()
 add_subdirectory(test)
+add_subdirectory(bench)
