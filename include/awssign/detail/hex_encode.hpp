@@ -7,6 +7,7 @@
 namespace awssign::detail {
 
 // lowercase base16 character encoding
+// TODO: consider simd for hex_encode
 template <typename Writer> // void(const char*, const char*)
 std::size_t hex_encode(unsigned char c, Writer&& out)
 {
