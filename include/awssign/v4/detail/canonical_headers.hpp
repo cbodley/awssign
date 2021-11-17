@@ -4,7 +4,7 @@
 #include <cctype>
 #include <iterator>
 #include <awssign/detail/emit.hpp>
-#include <awssign/detail/transform_if.hpp>
+#include <awssign/detail/transform.hpp>
 
 namespace awssign::v4::detail {
 
