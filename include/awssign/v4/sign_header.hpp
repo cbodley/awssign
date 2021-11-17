@@ -1,8 +1,9 @@
 #pragma once
 
-#include <awssign/detail/hex_encode.hpp>
+#include <awssign/detail/buffered_writer.hpp>
 #include <awssign/detail/digest.hpp>
 #include <awssign/detail/digest_writer.hpp>
+#include <awssign/detail/hex_encode.hpp>
 #include <awssign/v4/detail/canonical_headers.hpp>
 #include <awssign/v4/detail/canonical_request.hpp>
 #include <awssign/v4/detail/signing_key.hpp>
@@ -12,6 +13,7 @@ namespace awssign::v4 {
 
 namespace detail {
 
+using awssign::detail::buffered;
 using awssign::detail::digest;
 using awssign::detail::digest_writer;
 using awssign::detail::hmac;
@@ -81,9 +83,10 @@ std::size_t sign_header(const char* hash_algorithm,
   std::string_view canonical_request_hash;
   {
     detail::digest hash{hash_algorithm};
+    detail::digest_writer hash_writer{hash};
     detail::canonical_request(service, method, uri_path, query,
                               canonical_header0, canonical_headerN,
-                              payload_hash, detail::digest_writer{hash});
+                              payload_hash, detail::buffered<256>(hash_writer));
     unsigned char buffer[detail::digest::max_size];
     const auto size = hash.finish(buffer);
     char* pos = canonical_buffer;
@@ -108,8 +111,9 @@ std::size_t sign_header(const char* hash_algorithm,
   std::string_view signature;
   {
     detail::hmac hash{hash_algorithm, signing_key, signing_key_size};
+    detail::digest_writer writer{hash};
     detail::string_to_sign(hash_algorithm, date_iso8601, region, service,
-                           canonical_request_hash, detail::digest_writer{hash});
+                           canonical_request_hash, detail::buffered<256>(writer));
     unsigned char buffer[detail::hmac::max_size];
     const auto size = hash.finish(buffer);
     char* pos = signature_buffer;
