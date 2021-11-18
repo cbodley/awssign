@@ -4,11 +4,14 @@
 #include <cctype>
 #include <iterator>
 #include <awssign/detail/emit.hpp>
+#include <awssign/detail/lower_case.hpp>
 #include <awssign/detail/transform.hpp>
 
 namespace awssign::v4::detail {
 
 using awssign::detail::emit;
+using awssign::detail::lower_case_less;
+using awssign::detail::lower_case_writer;
 using awssign::detail::transform_if;
 
 inline bool whitespace(unsigned char c) { return std::isspace(c); }
@@ -32,13 +35,7 @@ template <typename Iterator, // forward iterator with value_type=char
           typename Writer> // void(Iterator, Iterator)
 std::size_t canonical_header_name(Iterator begin, Iterator end, Writer&& out)
 {
-  constexpr auto is_upper = [] (unsigned char c) {
-    return std::isupper(c);
-  };
-  constexpr auto to_lower = [] (unsigned char c, Writer& out) {
-    return emit(std::tolower(c), out);
-  };
-  return transform_if(begin, end, is_upper, to_lower, out);
+  return emit(begin, end, lower_case_writer{out});
 }
 
 // trim any leading/trailing whitespace, and replace any internal whitespace
@@ -76,15 +73,8 @@ struct canonical_header {
 
 // compares header names in their canonical format
 struct canonical_name_less {
-  bool operator()(unsigned char l, unsigned char r) const {
-    return std::tolower(l) < std::tolower(r);
-  }
-  bool operator()(std::string_view l, std::string_view r) const {
-    return std::lexicographical_compare(l.begin(), l.end(),
-                                        r.begin(), r.end(), *this);
-  }
   bool operator()(const canonical_header& l, const canonical_header& r) const {
-    return (*this)(l.name, r.name);
+    return lower_case_less{}(l.name, r.name);
   }
 };
 
@@ -115,8 +105,7 @@ std::size_t canonical_headers(HeaderIterator header0,
   std::size_t bytes = 0;
   std::string_view last_name;
   for (auto o = header0; o != headerN; ++o) {
-    constexpr auto iless = canonical_name_less{};
-    if (!iless(last_name, o->name)) {
+    if (!lower_case_less{}(last_name, o->name)) {
       // comma-separate values with the same header name
       bytes += emit(',', out);
       bytes += canonical_header_value(o->value.begin(),
@@ -152,8 +141,7 @@ std::size_t signed_headers(HeaderIterator header0,
   std::size_t bytes = 0;
   std::string_view last_name;
   for (auto o = header0; o != headerN; ++o) {
-    constexpr auto iless = canonical_name_less{};
-    if (!iless(last_name, o->name)) {
+    if (!lower_case_less{}(last_name, o->name)) {
       continue; // skip duplicate header names
     }
     last_name = o->name;
