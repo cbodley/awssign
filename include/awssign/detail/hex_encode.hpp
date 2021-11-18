@@ -7,14 +7,12 @@
 namespace awssign::detail {
 
 // lowercase base16 character encoding
-// TODO: consider simd for hex_encode
 template <typename Writer> // void(const char*, const char*)
 std::size_t hex_encode(unsigned char c, Writer&& out)
 {
-  char buffer[10]; // longest string for int is "%FFFFFFFF\0"
-  const auto count = std::snprintf(buffer, sizeof(buffer),
-                                   "%.2x", static_cast<int>(c));
-  return emit(buffer, buffer + count, out);
+  constexpr auto table = std::string_view{"0123456789abcdef"};
+  return emit(table[c >> 4], out) // high 4 bits
+      + emit(table[c & 0xf], out); // low 4 bits
 }
 
 template <typename Writer> // void(const char*, const char*)
