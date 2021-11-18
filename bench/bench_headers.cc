@@ -1,4 +1,5 @@
 #include <random>
+#include <string>
 #include <benchmark/benchmark.h>
 #include <awssign/v4.hpp>
 
@@ -20,9 +21,8 @@ struct header_type {
   std::string_view name() const { return name_; }
   std::string_view value() const { return value_; }
 
-  char buffer[1024];
-  std::string_view name_;
-  std::string_view value_;
+  std::string name_;
+  std::string value_;
 };
 
 using random_engine = std::default_random_engine;
@@ -51,26 +51,21 @@ static void generate_header(random_engine& rng,
                             header_type& header)
 {
   const std::size_t name_len = name_lengths(rng);
+  std::generate_n(std::back_inserter(header.name_), name_len,
+                  choose_char{rng, name_chars});
+
   const std::size_t value_len = value_lengths(rng);
-
-  header.name_ = std::string_view{header.buffer, name_len};
-  header.value_ = std::string_view{header.buffer + name_len, value_len};
-
-  std::generate(header.buffer,
-                header.buffer + name_len,
-                choose_char{rng, name_chars});
-  std::generate(header.buffer + name_len,
-                header.buffer + name_len + value_len,
-                choose_char{rng, value_chars});
+  std::generate_n(std::back_inserter(header.value_), value_len,
+                  choose_char{rng, value_chars});
 }
 
 // generic parameterized benchmark
-static void bench_headers(size_distribution name_lengths,
+static void bench_headers(benchmark::State& state,
+                          size_distribution name_lengths,
                           std::string_view name_chars,
                           size_distribution value_lengths,
                           std::string_view value_chars,
-                          std::size_t headers_per_request,
-                          benchmark::State& state)
+                          std::size_t headers_per_request)
 {
   using awssign::v4::sign_header;
 
@@ -121,159 +116,72 @@ static constexpr std::string_view whitespacey_chars{
   " \f\n\r\t\v"
 };
 
-static void bench_8_short_headers(benchmark::State& state)
-{
-  const auto name_lengths = short_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = short_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 8;
+BENCHMARK_CAPTURE(bench_headers, short_8,
+                  short_lengths, alphanumeric_chars,
+                  short_lengths, alphanumeric_chars, 8);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_8_short_headers);
+BENCHMARK_CAPTURE(bench_headers, short_16,
+                  short_lengths, alphanumeric_chars,
+                  short_lengths, alphanumeric_chars, 16);
 
-static void bench_8_medium_headers(benchmark::State& state)
-{
-  const auto name_lengths = medium_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = medium_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 8;
+BENCHMARK_CAPTURE(bench_headers, short_32,
+                  short_lengths, alphanumeric_chars,
+                  short_lengths, alphanumeric_chars, 32);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_8_medium_headers);
+BENCHMARK_CAPTURE(bench_headers, short_64,
+                  short_lengths, alphanumeric_chars,
+                  short_lengths, alphanumeric_chars, 64);
 
-static void bench_16_medium_headers(benchmark::State& state)
-{
-  const auto name_lengths = medium_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = medium_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 16;
+BENCHMARK_CAPTURE(bench_headers, medium_8,
+                  medium_lengths, alphanumeric_chars,
+                  medium_lengths, alphanumeric_chars, 8);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_16_medium_headers);
+BENCHMARK_CAPTURE(bench_headers, medium_16,
+                  medium_lengths, alphanumeric_chars,
+                  medium_lengths, alphanumeric_chars, 16);
 
-static void bench_32_medium_headers(benchmark::State& state)
-{
-  const auto name_lengths = medium_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = medium_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 32;
+BENCHMARK_CAPTURE(bench_headers, medium_32,
+                  medium_lengths, alphanumeric_chars,
+                  medium_lengths, alphanumeric_chars, 32);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_32_medium_headers);
+BENCHMARK_CAPTURE(bench_headers, long_names_8,
+                  long_lengths, alphanumeric_chars,
+                  short_lengths, alphanumeric_chars, 8);
 
-static void bench_4_long_header_names(benchmark::State& state)
-{
-  const auto name_lengths = long_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = short_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 4;
+BENCHMARK_CAPTURE(bench_headers, long_names_16,
+                  long_lengths, alphanumeric_chars,
+                  short_lengths, alphanumeric_chars, 16);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_4_long_header_names);
+BENCHMARK_CAPTURE(bench_headers, long_values_8,
+                  short_lengths, alphanumeric_chars,
+                  long_lengths, alphanumeric_chars, 8);
 
-static void bench_64_long_header_names(benchmark::State& state)
-{
-  const auto name_lengths = long_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = short_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 64;
+BENCHMARK_CAPTURE(bench_headers, long_values_16,
+                  short_lengths, alphanumeric_chars,
+                  long_lengths, alphanumeric_chars, 16);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_64_long_header_names);
+BENCHMARK_CAPTURE(bench_headers, medium_lowercase_8,
+                  medium_lengths, lowercase_chars,
+                  medium_lengths, lowercase_chars, 8);
 
-static void bench_8_long_header_values(benchmark::State& state)
-{
-  const auto name_lengths = short_lengths;
-  constexpr auto name_chars = alphanumeric_chars;
-  const auto value_lengths = long_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 8;
+BENCHMARK_CAPTURE(bench_headers, medium_uppercase_8,
+                  medium_lengths, uppercase_chars,
+                  medium_lengths, uppercase_chars, 8);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_8_long_header_values);
+BENCHMARK_CAPTURE(bench_headers, medium_whitespacey_8,
+                  medium_lengths, whitespacey_chars,
+                  medium_lengths, whitespacey_chars, 8);
 
-static void bench_8_lowercase_headers(benchmark::State& state)
-{
-  const auto name_lengths = medium_lengths;
-  constexpr auto name_chars = lowercase_chars;
-  const auto value_lengths = medium_lengths;
-  constexpr auto value_chars = lowercase_chars;
-  constexpr std::size_t headers_per_request = 8;
+BENCHMARK_CAPTURE(bench_headers, multi_value_8,
+                  // use "aaaaaaaa" for all header names
+                  size_distribution{8, 8},
+                  std::string_view{"a"},
+                  medium_lengths, alphanumeric_chars, 8);
 
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_8_lowercase_headers);
-
-static void bench_8_uppercase_headers(benchmark::State& state)
-{
-  const auto name_lengths = medium_lengths;
-  constexpr auto name_chars = uppercase_chars;
-  const auto value_lengths = medium_lengths;
-  constexpr auto value_chars = uppercase_chars;
-  constexpr std::size_t headers_per_request = 8;
-
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_8_uppercase_headers);
-
-static void bench_8_whitespacey_headers(benchmark::State& state)
-{
-  const auto name_lengths = medium_lengths;
-  constexpr auto name_chars = uppercase_chars;
-  const auto value_lengths = medium_lengths;
-  constexpr auto value_chars = whitespacey_chars;
-  constexpr std::size_t headers_per_request = 8;
-
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_8_whitespacey_headers);
-
-static void bench_16_multi_value_headers(benchmark::State& state)
-{
-  // use "aaaaaaaa" for all header names
-  auto name_lengths = size_distribution{8, 8};
-  constexpr auto name_chars = std::string_view{"a"};
-  auto value_lengths = medium_lengths;
-  constexpr auto value_chars = alphanumeric_chars;
-  constexpr std::size_t headers_per_request = 16;
-
-  bench_headers(name_lengths, name_chars,
-                value_lengths, value_chars,
-                headers_per_request, state);
-}
-BENCHMARK(bench_16_multi_value_headers);
+BENCHMARK_CAPTURE(bench_headers, multi_value_16,
+                  // use "aaaaaaaa" for all header names
+                  size_distribution{8, 8},
+                  std::string_view{"a"},
+                  medium_lengths, alphanumeric_chars, 16);
 
 BENCHMARK_MAIN();
