@@ -38,12 +38,8 @@ std::size_t authorization_header_value(std::string_view hash_algorithm,
   bytes += emit(" Credential=", out);
   bytes += emit(access_key_id, out);
   bytes += emit('/', out);
-  bytes += emit(date_YYYYMMDD, out);
-  bytes += emit('/', out);
-  bytes += emit(region, out);
-  bytes += emit('/', out);
-  bytes += emit(service, out);
-  bytes += emit("/aws4_request, SignedHeaders=", out);
+  bytes += scope(date_YYYYMMDD, region, service, out);
+  bytes += emit(", SignedHeaders=", out);
   bytes += signed_headers(canonical_header0, canonical_headerN, out);
   bytes += emit(", Signature=", out);
   bytes += emit(signature, out);
