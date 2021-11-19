@@ -50,8 +50,8 @@ bool verify(const char* hash_algorithm,
   // out headers whose names aren't in signed_headers
   auto filtered_header0 = detail::make_signed_header_iterator(
       signed_headers, canonical_header0, canonical_headerN);
-  auto filtered_headerN = detail::make_signed_header_iterator(
-      "", canonical_headerN, canonical_headerN);
+  auto filtered_headerN = detail::signed_header_iterator<
+      detail::canonical_header*>{}; // end iterator
 
   // generate the canonical request hash
   char canonical_buffer[detail::digest::max_size * 2]; // hex encoded
