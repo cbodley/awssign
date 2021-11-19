@@ -10,8 +10,7 @@
 namespace awssign::v4::detail {
 
 using awssign::detail::emit;
-using awssign::detail::lower_case_less;
-using awssign::detail::lower_case_writer;
+using awssign::detail::lower_case_string;
 using awssign::detail::transform_if;
 
 inline bool whitespace(unsigned char c) { return std::isspace(c); }
@@ -31,11 +30,10 @@ std::string_view trim(std::string_view str)
 }
 
 // convert the header name to lower case
-template <typename Iterator, // forward iterator with value_type=char
-          typename Writer> // void(Iterator, Iterator)
-std::size_t canonical_header_name(Iterator begin, Iterator end, Writer&& out)
+template <typename Writer> // void(Iterator, Iterator)
+std::size_t canonical_header_name(lower_case_string name, Writer&& out)
 {
-  return emit(begin, end, lower_case_writer{out});
+  return emit(name, out);
 }
 
 // trim any leading/trailing whitespace, and replace any internal whitespace
@@ -67,16 +65,19 @@ std::size_t canonical_header_value(Iterator begin, Iterator end, Writer&& out)
 }
 
 struct canonical_header {
-  std::string_view name; // trimmed header name
+  lower_case_string name;
   std::string_view value;
+
+  canonical_header() = default;
+  canonical_header(std::string_view name, std::string_view value)
+      : name(trim(name)), value(value) {}
 };
 
-// compares header names in their canonical format
-struct canonical_name_less {
-  bool operator()(const canonical_header& l, const canonical_header& r) const {
-    return lower_case_less{}(l.name, r.name);
-  }
-};
+// sort by canonical header name
+inline bool operator<(const canonical_header& l, const canonical_header& r)
+{
+  return l.name < r.name;
+}
 
 template <typename InputIterator,
           typename OutputIterator>
@@ -87,11 +88,10 @@ OutputIterator sorted_canonical_headers(InputIterator begin,
   // initialize the canonical header array
   auto o = out;
   for (auto i = begin; i != end; ++o, ++i) {
-    o->name = trim(i->name());
-    o->value = i->value();
+    *o = canonical_header{i->name(), i->value()};
   }
   // stable sort headers by canonical name
-  std::stable_sort(out, o, canonical_name_less{});
+  std::stable_sort(out, o);
   return o;
 }
 
@@ -103,9 +103,9 @@ std::size_t canonical_headers(HeaderIterator header0,
                               Writer&& out)
 {
   std::size_t bytes = 0;
-  std::string_view last_name;
+  lower_case_string last_name;
   for (auto o = header0; o != headerN; ++o) {
-    if (!lower_case_less{}(last_name, o->name)) {
+    if (last_name == o->name) {
       // comma-separate values with the same header name
       bytes += emit(',', out);
       bytes += canonical_header_value(o->value.begin(),
@@ -117,8 +117,7 @@ std::size_t canonical_headers(HeaderIterator header0,
       }
       last_name = o->name;
       // write name:value
-      bytes += canonical_header_name(o->name.begin(),
-                                     o->name.end(), out);
+      bytes += canonical_header_name(o->name, out);
       bytes += emit(':', out);
       bytes += canonical_header_value(o->value.begin(),
                                       o->value.end(), out);
@@ -139,17 +138,16 @@ std::size_t signed_headers(HeaderIterator header0,
                            Writer&& out)
 {
   std::size_t bytes = 0;
-  std::string_view last_name;
+  lower_case_string last_name;
   for (auto o = header0; o != headerN; ++o) {
-    if (!lower_case_less{}(last_name, o->name)) {
+    if (last_name == o->name) {
       continue; // skip duplicate header names
     }
     last_name = o->name;
     if (bytes) { // separate header names with ;
       bytes += emit(';', out);
     }
-    bytes += canonical_header_name(o->name.begin(),
-                                   o->name.end(), out);
+    bytes += canonical_header_name(o->name, out);
   }
   return bytes;
 }

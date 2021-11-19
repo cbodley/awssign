@@ -27,7 +27,7 @@ TEST(canonical_headers, name)
 {
   const auto canonical_name = [] (std::string_view name) {
     std::string result;
-    detail::canonical_header_name(name.begin(), name.end(), capture{result});
+    detail::canonical_header_name(detail::lower_case_string{name}, capture{result});
     return result;
   };
   EXPECT_EQ("", canonical_name(""));
