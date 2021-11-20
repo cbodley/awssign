@@ -24,6 +24,10 @@ add_executable(test_v4_canonical_uri test_v4_canonical_uri.cc)
 target_link_libraries(test_v4_canonical_uri awssign address-sanitizer gtest gtest_main)
 add_test(test_v4_canonical_uri test_v4_canonical_uri)
 
+add_executable(test_v4_presign test_v4_presign.cc)
+target_link_libraries(test_v4_presign awssign address-sanitizer gtest gtest_main)
+add_test(test_v4_presign test_v4_presign)
+
 add_executable(test_v4_s3_canonical_uri test_v4_s3_canonical_uri.cc)
 target_link_libraries(test_v4_s3_canonical_uri awssign address-sanitizer gtest gtest_main)
 add_test(test_v4_s3_canonical_uri test_v4_s3_canonical_uri)
