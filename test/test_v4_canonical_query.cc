@@ -30,6 +30,12 @@ TEST(canonical_query, sort_value)
   EXPECT_EQ("name=value1&name=value2", canonicalize("name=value2&name=value1"));
 }
 
+TEST(canonical_query, sort_encoded_name)
+{
+  EXPECT_EQ("na%2Ame=value1&na%2Ame=value2",
+            canonicalize("na*me=value1&na%2Ame=value2"));
+}
+
 TEST(canonical_query, sort_name_spaces)
 {
   EXPECT_EQ("na%20me=value1&na%20me=value2", canonicalize("na me=value2&na+me=value1"));

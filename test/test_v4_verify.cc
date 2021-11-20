@@ -115,4 +115,18 @@ TEST(verify, aws4_testsuite_get_header_value_trim)
                      "acc3ed3afb60bb290fc8d2dd0098b9911fcaa05412b367055dee359757a9c736"));
 }
 
+TEST(verify, aws4_testsuite_get_vanilla_utf8_query)
+{
+  const header_type headers[] = {
+    {"Host", "example.amazonaws.com"},
+    {"X-Amz-Date", "20150830T123600Z"},
+  };
+  constexpr auto signed_headers = "host;x-amz-date";
+  EXPECT_TRUE(verify("SHA256", "20150830T123600Z", "us-east-1", "service",
+                     signed_headers, "GET", "/", "?%E1%88%B4=bar",
+                     std::begin(headers), std::end(headers),
+                     empty_payload_hash, secret_access_key,
+                     "2cdec8eed098649ff3a119c94853b13c643bcf08f8b0a1d91e12c9027818dd04"));
+}
+
 } // namespace awssign::v4

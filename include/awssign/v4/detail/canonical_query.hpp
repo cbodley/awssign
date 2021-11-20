@@ -4,15 +4,21 @@
 #include <cstddef>
 #include <awssign/detail/emit.hpp>
 #include <awssign/detail/percent_encode.hpp>
+#include <awssign/detail/percent_decode_iterator.hpp>
+#include <awssign/detail/percent_decode_writer.hpp>
 #include <awssign/detail/transform.hpp>
+#include <awssign/detail/transform_writer.hpp>
 
 namespace awssign::v4::detail {
 
 using awssign::detail::emit;
 using awssign::detail::need_percent_encode;
+using awssign::detail::percent_decode_iterator;
+using awssign::detail::percent_decode_writer;
 using awssign::detail::percent_encode;
 using awssign::detail::percent_encode_twice;
 using awssign::detail::transform_if;
+using awssign::detail::transformed_if;
 
 template <typename InputIterator, // forward iterator with value_type=char
           typename OutputIterator> // forward parameter iterator
@@ -42,7 +48,9 @@ std::size_t canonical_parameter_name(Iterator begin, Iterator end,
     // spaces must be encoded as ' ', not '+'
     return percent_encode(c == '+' ? ' ' : c, out);
   };
-  return transform_if(begin, end, need_percent_encode, escape, out);
+  auto encoder = transformed_if(need_percent_encode, escape, out);
+  auto decoder = percent_decoded(encoder);
+  return emit(begin, end, decoder);
 }
 
 template <typename Iterator, // forward iterator with value_type=char
@@ -58,7 +66,9 @@ std::size_t canonical_parameter_value(Iterator begin, Iterator end,
       return percent_encode(c == '+' ? ' ' : c, out);
     }
   };
-  return transform_if(begin, end, need_percent_encode, escape, out);
+  auto encoder = transformed_if(need_percent_encode, escape, out);
+  auto decoder = percent_decoded(encoder);
+  return emit(begin, end, decoder);
 }
 
 template <typename Iterator, // forward iterator with value_type=char
@@ -84,6 +94,12 @@ std::size_t canonical_query(Iterator begin, Iterator end, Writer&& out)
   if (begin == end) {
     return 0;
   }
+  if (*begin == '?') {
+    ++begin;
+    if (begin == end) {
+      return 0;
+    }
+  }
   const auto count = 1 + std::count(begin, end, '&');
   struct parameter {
     Iterator begin;
@@ -94,7 +110,7 @@ std::size_t canonical_query(Iterator begin, Iterator end, Writer&& out)
 
   const auto params_end = parse_query_parameters(begin, end, params);
 
-  // sort parameters by 'encoded' query name and value
+  // sort parameters by canonical query name and value
   struct parameter_less {
     char transform(char c) const {
       return c == '+' ? ' ' : c;
@@ -103,8 +119,11 @@ std::size_t canonical_query(Iterator begin, Iterator end, Writer&& out)
       return transform(l) < transform(r);
     }
     bool operator()(const parameter& l, const parameter& r) const {
-      return std::lexicographical_compare(l.begin, l.end,
-                                          r.begin, r.end, *this);
+      // sort in percent-decoded form
+      using iterator = percent_decode_iterator<Iterator>;
+      return std::lexicographical_compare(
+          iterator{l.begin, l.end}, iterator{},
+          iterator{r.begin, r.end}, iterator{}, *this);
     }
   };
   std::sort(params, params_end, parameter_less{});

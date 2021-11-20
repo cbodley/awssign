@@ -1,4 +1,4 @@
-#include <awssign/detail/percent_decode.hpp>
+#include <awssign/detail/percent_decode_writer.hpp>
 #include <gtest/gtest.h>
 
 namespace awssign {
@@ -17,9 +17,8 @@ std::string decode(Args&& ...args)
 {
   std::string result;
   auto writer = capture{result};
-  detail::percent_decoder decoder;
-  (decoder.decode(std::begin(args), std::end(args) - 1, writer), ...);
-  decoder.eof();
+  auto decoder = detail::percent_decoded(writer);
+  (detail::emit(std::begin(args), std::end(args) - 1, decoder), ...);
   return result;
 }
 
@@ -41,14 +40,14 @@ TEST(percent_decoder, escape)
 
 TEST(percent_decoder, invalid_character)
 {
-  EXPECT_THROW(decode("%!0"), detail::percent_decode_error);
-  EXPECT_THROW(decode("%0!"), detail::percent_decode_error);
+  EXPECT_EQ(std::string_view("\0", 1), decode("%!0"));
+  EXPECT_EQ(std::string_view("\0", 1), decode("%0!"));
 }
 
 TEST(percent_decoder, invalid_eof)
 {
-  EXPECT_THROW(decode("%"), detail::percent_decode_error);
-  EXPECT_THROW(decode("%0"), detail::percent_decode_error);
+  EXPECT_EQ("", decode("%"));
+  EXPECT_EQ("", decode("%0"));
 }
 
 } // namespace awssign

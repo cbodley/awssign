@@ -7,7 +7,7 @@ namespace awssign::detail {
 
 inline bool need_percent_encode(unsigned char c)
 {
-  constexpr char unreserved[256] = {
+  static constexpr char unreserved[256] = {
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, //   0- 15
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, //  16- 31
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,'-','.',  0, //  32- 47

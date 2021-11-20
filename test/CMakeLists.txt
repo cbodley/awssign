@@ -8,6 +8,10 @@ add_executable(test_digest test_digest.cc)
 target_link_libraries(test_digest awssign address-sanitizer gtest gtest_main)
 add_test(test_digest test_digest)
 
+add_executable(test_percent_decode test_percent_decode.cc)
+target_link_libraries(test_percent_decode awssign address-sanitizer gtest gtest_main)
+add_test(test_percent_decode test_percent_decode)
+
 add_executable(test_v4_canonical_headers test_v4_canonical_headers.cc)
 target_link_libraries(test_v4_canonical_headers awssign address-sanitizer gtest gtest_main)
 add_test(test_v4_canonical_headers test_v4_canonical_headers)
