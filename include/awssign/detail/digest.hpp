@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <utility>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -20,7 +21,7 @@ auto make_digest_error(unsigned long code) {
 
 class digest {
   ::EVP_MD_CTX* ctx;
-  const EVP_MD* md;
+  const ::EVP_MD* md;
  public:
   static constexpr std::size_t max_size = EVP_MAX_MD_SIZE;
 
@@ -39,6 +40,20 @@ class digest {
   ~digest() {
     ::EVP_MD_CTX_free(ctx);
   }
+  digest(const digest&) = delete;
+  digest& operator=(const digest&) = delete;
+
+  digest(digest&& o) noexcept
+      : ctx(std::exchange(o.ctx, nullptr)),
+        md(std::exchange(o.md, nullptr))
+  {}
+  digest& operator=(digest&& o) {
+    using std::swap;
+    swap(ctx, o.ctx);
+    swap(md, o.md);
+    return *this;
+  }
+
   void init() {
     if (!::EVP_DigestInit_ex(ctx, md, nullptr)) {
       throw make_digest_error(::ERR_get_error());
@@ -60,7 +75,7 @@ class digest {
 
 class hmac {
   ::HMAC_CTX* ctx;
-  const EVP_MD* md;
+  const ::EVP_MD* md;
  public:
   static constexpr std::size_t max_size = EVP_MAX_MD_SIZE;
 
@@ -89,6 +104,20 @@ class hmac {
   ~hmac() {
     ::HMAC_CTX_free(ctx);
   }
+  hmac(const hmac&) = delete;
+  hmac& operator=(const hmac&) = delete;
+
+  hmac(hmac&& o) noexcept
+      : ctx(std::exchange(o.ctx, nullptr)),
+        md(std::exchange(o.md, nullptr))
+  {}
+  hmac& operator=(hmac&& o) noexcept {
+    using std::swap;
+    swap(ctx, o.ctx);
+    swap(md, o.md);
+    return *this;
+  }
+
   void init() {
     if (!::HMAC_Init_ex(ctx, nullptr, 0, md, nullptr)) {
       throw make_digest_error(::ERR_get_error());

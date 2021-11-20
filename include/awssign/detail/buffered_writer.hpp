@@ -24,6 +24,12 @@ class buffered_writer {
       next(buffer.begin(), buffer_pos);
     }
   }
+  buffered_writer(const buffered_writer&) = delete;
+  buffered_writer& operator=(const buffered_writer&) = delete;
+
+  buffered_writer(buffered_writer&& o) noexcept
+      : next(o.next), buffer_pos(buffer.begin())
+  {}
 
   template <typename Iterator>
   void operator()(Iterator begin, Iterator end) {
