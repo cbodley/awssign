@@ -1,4 +1,4 @@
-#include <awssign/v4/sign_header.hpp>
+#include <awssign/v4/sign.hpp>
 #include <gtest/gtest.h>
 
 namespace awssign::v4 {
@@ -46,7 +46,7 @@ TEST(signing_key, example)
   EXPECT_EQ(result, "c4afb1cc5771d871763a393e44b703571b55cc28424d1a5e86da6ed3c154a4b9");
 }
 
-TEST(sign_header, aws4_testsuite_get_header_key_duplicate)
+TEST(sign, aws4_testsuite_get_header_key_duplicate)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -56,16 +56,16 @@ TEST(sign_header, aws4_testsuite_get_header_key_duplicate)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  sign_header("SHA256", access_key_id, secret_access_key, "GET", "/", "",
-              std::begin(headers), std::end(headers), empty_payload_hash,
-              "20150830T123600Z", "us-east-1", "service", capture{result});
+  sign("SHA256", access_key_id, secret_access_key, "GET", "/", "",
+       std::begin(headers), std::end(headers), empty_payload_hash,
+       "20150830T123600Z", "us-east-1", "service", capture{result});
   EXPECT_EQ(result, "AWS4-HMAC-SHA256 \
 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, \
 SignedHeaders=host;my-header1;x-amz-date, \
 Signature=c9d5ea9f3f72853aea855b47ea873832890dbdd183b4468f858259531a5138ea");
 }
 
-TEST(sign_header, aws4_testsuite_get_header_value_multiline)
+TEST(sign, aws4_testsuite_get_header_value_multiline)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -73,16 +73,16 @@ TEST(sign_header, aws4_testsuite_get_header_value_multiline)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  sign_header("SHA256", access_key_id, secret_access_key, "GET", "/", "",
-              std::begin(headers), std::end(headers), empty_payload_hash,
-              "20150830T123600Z", "us-east-1", "service", capture{result});
+  sign("SHA256", access_key_id, secret_access_key, "GET", "/", "",
+       std::begin(headers), std::end(headers), empty_payload_hash,
+       "20150830T123600Z", "us-east-1", "service", capture{result});
   EXPECT_EQ(result, "AWS4-HMAC-SHA256 \
 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, \
 SignedHeaders=host;my-header1;x-amz-date, \
 Signature=cfd34249e4b1c8d6b91ef74165d41a32e5fab3306300901bb65a51a73575eefd");
 }
 
-TEST(sign_header, aws4_testsuite_get_header_value_order)
+TEST(sign, aws4_testsuite_get_header_value_order)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -93,16 +93,16 @@ TEST(sign_header, aws4_testsuite_get_header_value_order)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  sign_header("SHA256", access_key_id, secret_access_key, "GET", "/", "",
-              std::begin(headers), std::end(headers), empty_payload_hash,
-              "20150830T123600Z", "us-east-1", "service", capture{result});
+  sign("SHA256", access_key_id, secret_access_key, "GET", "/", "",
+       std::begin(headers), std::end(headers), empty_payload_hash,
+       "20150830T123600Z", "us-east-1", "service", capture{result});
   EXPECT_EQ(result, "AWS4-HMAC-SHA256 \
 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, \
 SignedHeaders=host;my-header1;x-amz-date, \
 Signature=08c7e5a9acfcfeb3ab6b2185e75ce8b1deb5e634ec47601a50643f830c755c01");
 }
 
-TEST(sign_header, aws4_testsuite_get_header_value_trim)
+TEST(sign, aws4_testsuite_get_header_value_trim)
 {
   const header_type headers[] = {
     {"Host", "example.amazonaws.com"},
@@ -111,9 +111,9 @@ TEST(sign_header, aws4_testsuite_get_header_value_trim)
     {"X-Amz-Date", "20150830T123600Z"},
   };
   std::string result;
-  sign_header("SHA256", access_key_id, secret_access_key, "GET", "/", "",
-              std::begin(headers), std::end(headers), empty_payload_hash,
-              "20150830T123600Z", "us-east-1", "service", capture{result});
+  sign("SHA256", access_key_id, secret_access_key, "GET", "/", "",
+       std::begin(headers), std::end(headers), empty_payload_hash,
+       "20150830T123600Z", "us-east-1", "service", capture{result});
   EXPECT_EQ(result, "AWS4-HMAC-SHA256 \
 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, \
 SignedHeaders=host;my-header1;my-header2;x-amz-date, \

@@ -1,9 +1,10 @@
 #pragma once
 
-#include <awssign/detail/buffered_writer.hpp>
+#include <awssign/detail/buffered_stream.hpp>
 #include <awssign/detail/digest.hpp>
-#include <awssign/detail/digest_writer.hpp>
+#include <awssign/detail/digest_stream.hpp>
 #include <awssign/detail/hex_encode.hpp>
+#include <awssign/detail/output_stream.hpp>
 #include <awssign/v4/detail/canonical_headers.hpp>
 #include <awssign/v4/detail/canonical_request.hpp>
 #include <awssign/v4/detail/signed_header_iterator.hpp>
@@ -16,16 +17,17 @@ namespace detail {
 
 using awssign::detail::buffered;
 using awssign::detail::digest;
-using awssign::detail::digest_writer;
+using awssign::detail::digest_stream;
 using awssign::detail::hex_encode;
 using awssign::detail::hmac;
+using awssign::detail::output_stream;
 
 } // namespace detail
 
 // verify that the signature matches what we generate for the given request
 template <typename HeaderIterator>
 bool verify(const char* hash_algorithm,
-            std::string_view date_iso8601,
+            std::string_view date,
             std::string_view region,
             std::string_view service,
             std::string_view signed_headers,
@@ -58,42 +60,35 @@ bool verify(const char* hash_algorithm,
   std::string_view canonical_request_hash;
   {
     detail::digest hash{hash_algorithm};
-    detail::digest_writer hash_writer{hash};
+    detail::digest_stream stream{hash};
     detail::canonical_request(service, method, uri_path, query,
                               filtered_header0, filtered_headerN,
-                              payload_hash, detail::buffered<256>(hash_writer));
+                              payload_hash, detail::buffered<256>(stream));
     unsigned char buffer[detail::digest::max_size];
     const auto size = hash.finish(buffer);
     char* pos = canonical_buffer;
-    auto len = detail::hex_encode(buffer, buffer + size,
-      [&pos] (const char* begin, const char* end) {
-        pos = std::copy(begin, end, pos);
-      });
+    detail::hex_encode(buffer, buffer + size, detail::output_stream{pos});
+    const std::size_t len = std::distance(canonical_buffer, pos);
     canonical_request_hash = std::string_view{canonical_buffer, len};
   }
-
-  const auto date_YYYYMMDD = date_iso8601.substr(0, 8);
 
   // generate the signing key
   unsigned char signing_key[detail::hmac::max_size];
   const int signing_key_size = detail::build_signing_key(
       hash_algorithm, secret_access_key,
-      date_YYYYMMDD, region, service,
-      signing_key);
+      date, region, service, signing_key);
 
   // sign the string-to-sign
   char signature_buffer[detail::hmac::max_size * 2]; // hex encoded
   detail::hmac hash{hash_algorithm, signing_key, signing_key_size};
-  detail::digest_writer writer{hash};
-  detail::string_to_sign(hash_algorithm, date_iso8601, region, service,
-                         canonical_request_hash, detail::buffered<256>(writer));
+  detail::digest_stream stream{hash};
+  detail::string_to_sign(hash_algorithm, date, region, service,
+                         canonical_request_hash, detail::buffered<256>(stream));
   unsigned char buffer[detail::hmac::max_size];
   const auto size = hash.finish(buffer);
   char* pos = signature_buffer;
-  auto len = detail::hex_encode(buffer, buffer + size,
-    [&pos] (const char* begin, const char* end) {
-      pos = std::copy(begin, end, pos);
-    });
+  detail::hex_encode(buffer, buffer + size, detail::output_stream{pos});
+  const std::size_t len = std::distance(signature_buffer, pos);
 
   return signature == std::string_view{signature_buffer, len};
 }

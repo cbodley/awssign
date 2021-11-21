@@ -6,9 +6,9 @@
 
 namespace awssign::detail {
 
-template <typename Writer> // void(const char*, const char*)
-struct percent_decode_writer {
-  Writer& out;
+template <typename OutputStream> // void(const char*, const char*)
+struct percent_decoded_stream {
+  OutputStream& out;
   enum class state : uint8_t {
     normal,
     at_percent,
@@ -46,8 +46,9 @@ struct percent_decode_writer {
   }
 };
 
-template <typename Writer> // void(const char*, const char*)
-percent_decode_writer<Writer> percent_decoded(Writer&& out)
+template <typename OutputStream> // void(const char*, const char*)
+auto percent_decoded(OutputStream&& out)
+  -> percent_decoded_stream<OutputStream>
 {
   return {out};
 }

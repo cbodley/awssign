@@ -15,9 +15,8 @@ using awssign::detail::transform_if;
 
 inline bool is_slash(char c) { return c == '/'; }
 
-template <typename Iterator, // forward iterator with value_type=char
-          typename Visitor> // void(Iterator, Iterator)
-void visit_path_segments(Iterator begin, Iterator end, Visitor&& visitor)
+template <typename Visitor> // void(const char*, const char*)
+void visit_path_segments(const char* begin, const char* end, Visitor&& visitor)
 {
   auto i = std::find_if_not(begin, end, is_slash);
   for (;;) {
@@ -32,12 +31,11 @@ void visit_path_segments(Iterator begin, Iterator end, Visitor&& visitor)
   }
 }
 
-template <typename Iterator>
-std::size_t max_segment_stack_size(Iterator begin, Iterator end)
+inline std::size_t max_segment_stack_size(const char* begin, const char* end)
 {
   std::size_t count = 0;
   std::size_t max_count = 0;
-  auto visitor = [&count, &max_count] (Iterator begin, Iterator end) {
+  auto visitor = [&count, &max_count] (const char* begin, const char* end) {
     switch (std::distance(begin, end)) {
       case 0: // empty
         break;
@@ -65,13 +63,12 @@ std::size_t max_segment_stack_size(Iterator begin, Iterator end)
   return max_count;
 }
 
-template <typename InputIterator, // forward iterator with value_type=char
-          typename OutputIterator> // bidirectional segment iterator
-OutputIterator build_segment_stack(InputIterator in0, InputIterator inN,
-                                   OutputIterator out0, OutputIterator outN)
+template <typename SegmentIterator> // bidirectional segment iterator
+SegmentIterator build_segment_stack(const char* in0, const char* inN,
+                                    SegmentIterator out0, SegmentIterator outN)
 {
-  OutputIterator pos = out0;
-  auto visitor = [&] (InputIterator begin, InputIterator end) {
+  SegmentIterator pos = out0;
+  auto visitor = [&] (const char* begin, const char* end) {
     switch (std::distance(begin, end)) {
       case 0: // empty
         break;
@@ -102,45 +99,45 @@ OutputIterator build_segment_stack(InputIterator in0, InputIterator inN,
   return pos;
 }
 
-template <typename Iterator, // forward iterator with value_type=char
-          typename Writer> // void(Iterator, Iterator)
-std::size_t canonical_path_segment(Iterator begin, Iterator end, Writer&& out)
+template <typename OutputStream> // void(const char*, const char*)
+void canonical_path_segment(const char* begin, const char* end,
+                            OutputStream&& out)
 {
-  constexpr auto double_escape = [] (char c, Writer& out) {
+  constexpr auto double_escape = [] (char c, OutputStream& out) {
     return percent_encode_twice(c, out);
   };
-  return transform_if(begin, end, need_percent_encode, double_escape, out);
+  transform_if(begin, end, need_percent_encode, double_escape, out);
 }
 
 /// output an absolute uri path in canonical form, where the path is normalized
 /// and each path segment is double-percent-encoded
-template <typename Iterator, // forward iterator with value_type=char
-          typename Writer> // void(Iterator, Iterator)
-std::size_t canonical_uri(Iterator begin, Iterator end, Writer&& out)
+template <typename OutputStream> // void(const char*, const char*)
+void canonical_uri(const char* begin, const char* end,
+                   OutputStream&& out)
 {
   const auto count = max_segment_stack_size(begin, end);
   // allocate array for segment stack
   struct path_segment {
-    Iterator begin;
-    Iterator end;
+    const char* begin;
+    const char* end;
   };
   const auto segments = static_cast<path_segment*>(
       ::alloca(count * sizeof(path_segment)));
   auto segments_end = segments + count;
   // build segment stack
   segments_end = build_segment_stack(begin, end, segments, segments_end);
-
+  if (segments == segments_end) {
+    emit('/', out);
+    return;
+  }
   // write out each segment with double percent encoding
-  std::size_t bytes = 0;
   for (auto segment = segments; segment != segments_end; ++segment) {
-    bytes += emit('/', out);
-    bytes += canonical_path_segment(segment->begin, segment->end, out);
+    emit('/', out);
+    canonical_path_segment(segment->begin, segment->end, out);
   }
-  if (!bytes || // didn't write the initial slash yet
-      *std::prev(end) == '/') { // input has a trailing slash
-    bytes += emit('/', out);
+  if (*std::prev(end) == '/') {
+    emit('/', out); // input has a trailing slash
   }
-  return bytes;
 }
 
 } // namespace awssign::v4::detail

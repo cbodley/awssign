@@ -10,7 +10,7 @@ using awssign::detail::hmac;
 // use the given hash algorithm to derive the signing key
 std::size_t build_signing_key(const char* hash_algorithm,
                               std::string_view secret_access_key,
-                              std::string_view date_YYYYMMDD,
+                              std::string_view date,
                               std::string_view region,
                               std::string_view service,
                               unsigned char* signing_key)
@@ -20,7 +20,7 @@ std::size_t build_signing_key(const char* hash_algorithm,
   const int aws4_key_len = 4 + secret_access_key.copy(
       reinterpret_cast<char*>(aws4_key) + 4, sizeof(aws4_key) - 4);
   auto hash = hmac{hash_algorithm, aws4_key, aws4_key_len};
-  hash.update(date_YYYYMMDD.data(), date_YYYYMMDD.size());
+  hash.update(date.data(), 8);
   unsigned char date_key[hmac::max_size];
   const int date_key_len = hash.finish(date_key);
 

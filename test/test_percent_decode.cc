@@ -1,4 +1,4 @@
-#include <awssign/detail/percent_decode_writer.hpp>
+#include <awssign/detail/percent_decoded_stream.hpp>
 #include <gtest/gtest.h>
 
 namespace awssign {

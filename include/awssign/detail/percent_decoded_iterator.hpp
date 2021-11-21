@@ -9,7 +9,7 @@ namespace awssign::detail {
 
 // an iterator that percent-decodes the wrapped sequence
 template <typename Iterator>
-class percent_decode_iterator {
+class percent_decoded_iterator {
   struct iterator_state {
     Iterator pos;
     Iterator end;
@@ -47,18 +47,18 @@ class percent_decode_iterator {
   using reference = typename std::iterator_traits<Iterator>::reference;
   using iterator_category = std::forward_iterator_tag;
 
-  percent_decode_iterator() = default;
+  percent_decoded_iterator() = default;
 
-  percent_decode_iterator(Iterator begin, Iterator end = Iterator())
+  percent_decoded_iterator(Iterator begin, Iterator end = Iterator())
       : state(make_state(begin, end))
   {}
 
-  percent_decode_iterator& operator++() {
+  percent_decoded_iterator& operator++() {
     next();
     return *this;
   }
-  percent_decode_iterator operator++(int) {
-    percent_decode_iterator tmp = *this;
+  percent_decoded_iterator operator++(int) {
+    percent_decoded_iterator tmp = *this;
     next();
     return tmp;
   }
@@ -81,12 +81,12 @@ class percent_decode_iterator {
   }
   // no operator->
 
-  friend bool operator==(const percent_decode_iterator& lhs,
-                         const percent_decode_iterator& rhs) {
+  friend bool operator==(const percent_decoded_iterator& lhs,
+                         const percent_decoded_iterator& rhs) {
     return lhs.state == rhs.state;
   }
-  friend bool operator!=(const percent_decode_iterator& lhs,
-                         const percent_decode_iterator& rhs) {
+  friend bool operator!=(const percent_decoded_iterator& lhs,
+                         const percent_decoded_iterator& rhs) {
     return lhs.state != rhs.state;
   }
 };

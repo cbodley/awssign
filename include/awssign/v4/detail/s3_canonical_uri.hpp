@@ -37,18 +37,19 @@ inline bool need_percent_encode_no_slash(unsigned char c)
 
 /// output an absolute uri path in s3-canonical form, which percent-encodes the
 /// path without any normalization
-template <typename Iterator, // forward iterator with value_type=char
-          typename Writer> // void(Iterator, Iterator)
-std::size_t s3_canonical_uri(Iterator begin, Iterator end, Writer&& out)
+template <typename OutputStream> // void(const char*, const char*)
+void s3_canonical_uri(const char* begin, const char* end,
+                      OutputStream&& out)
 {
   if (begin == end) {
-    return emit('/', out);
+    emit('/', out);
+    return;
   }
-  constexpr auto escape = [] (char c, Writer& out) {
+  constexpr auto escape = [] (char c, OutputStream& out) {
     // spaces must be encoded as ' ', not '+'
-    return percent_encode(c == '+' ? ' ' : c, out);
+    percent_encode(c == '+' ? ' ' : c, out);
   };
-  return transform_if(begin, end, need_percent_encode_no_slash, escape, out);
+  transform_if(begin, end, need_percent_encode_no_slash, escape, out);
 }
 
 } // namespace awssign::v4::detail

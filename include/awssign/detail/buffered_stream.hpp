@@ -5,30 +5,30 @@
 
 namespace awssign::detail {
 
-// a Writer that may buffer up to Size bytes to minimize the number of writes
-// to the wrapped Writer. on destruction, any buffered data is flushed
-template <std::size_t Size, typename Writer>
-class buffered_writer {
+// a stream that may buffer up to Size bytes to minimize the number of writes
+// to the wrapped OutputStream. on destruction, any buffered data is flushed
+template <std::size_t Size, typename OutputStream>
+class buffered_stream {
   using array_type = std::array<char, Size>;
   using iterator_type = typename array_type::iterator;
 
-  Writer& next;
+  OutputStream& out;
   array_type buffer;
   iterator_type buffer_pos;
  public:
-  explicit buffered_writer(Writer& next) noexcept
-      : next(next), buffer_pos(buffer.begin())
+  buffered_stream(OutputStream& out) noexcept
+      : out(out), buffer_pos(buffer.begin())
   {}
-  ~buffered_writer() {
+  ~buffered_stream() {
     if (buffer.begin() != buffer_pos) { // flush any buffered data
-      next(buffer.begin(), buffer_pos);
+      out(buffer.begin(), buffer_pos);
     }
   }
-  buffered_writer(const buffered_writer&) = delete;
-  buffered_writer& operator=(const buffered_writer&) = delete;
+  buffered_stream(const buffered_stream&) = delete;
+  buffered_stream& operator=(const buffered_stream&) = delete;
 
-  buffered_writer(buffered_writer&& o) noexcept
-      : next(o.next), buffer_pos(buffer.begin())
+  buffered_stream(buffered_stream&& o) noexcept
+      : out(o.out), buffer_pos(buffer.begin())
   {}
 
   template <typename Iterator>
@@ -42,18 +42,20 @@ class buffered_writer {
     } else {
       // flush any buffered data
       if (buffer_remaining < Size) {
-        next(buffer.begin(), buffer_pos);
+        out(buffer.begin(), buffer_pos);
         buffer_pos = buffer.begin();
       }
       // pass remaining input directly
-      next(input_pos, end);
+      out(input_pos, end);
     }
   }
 };
 
-template <std::size_t Size, typename Writer>
-auto buffered(Writer&& writer) {
-  return buffered_writer<Size, Writer>(std::forward<Writer>(writer));
+template <std::size_t Size, typename OutputStream>
+auto buffered(OutputStream&& out)
+  -> buffered_stream<Size, OutputStream>
+{
+  return {std::forward<OutputStream>(out)};
 }
 
 } // namespace awssign::detail

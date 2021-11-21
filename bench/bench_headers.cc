@@ -67,7 +67,7 @@ static void bench_headers(benchmark::State& state,
                           std::string_view value_chars,
                           std::size_t headers_per_request)
 {
-  using awssign::v4::sign_header;
+  using awssign::v4::sign;
 
   random_engine rng; // default seed
 
@@ -84,9 +84,9 @@ static void bench_headers(benchmark::State& state,
     auto header = headers.begin();
     for (std::size_t request = 0; request < request_count; ++request) {
       auto end = header + headers_per_request;
-      sign_header(hash_algorithm, access_key_id, secret_access_key,
-                  method, uri_path, query, header, end, payload_hash,
-                  date_iso8601, region, service, noop_writer);
+      sign(hash_algorithm, access_key_id, secret_access_key,
+           method, uri_path, query, header, end, payload_hash,
+           date_iso8601, region, service, noop_writer);
       header = end;
     }
   }

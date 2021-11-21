@@ -81,7 +81,7 @@ static void bench_query(benchmark::State& state,
                         std::string_view value_chars,
                         std::size_t params_per_request)
 {
-  using awssign::v4::sign_header;
+  using awssign::v4::sign;
 
   random_engine rng; // default seed
 
@@ -98,10 +98,10 @@ static void bench_query(benchmark::State& state,
 
   for (auto _ : state) {
     for (const auto& query : query_strings) {
-      sign_header(hash_algorithm, access_key_id, secret_access_key,
-                  method, uri_path, query, std::begin(headers),
-                  std::end(headers), payload_hash,
-                  date_iso8601, region, service, noop_writer);
+      sign(hash_algorithm, access_key_id, secret_access_key,
+           method, uri_path, query, std::begin(headers),
+           std::end(headers), payload_hash,
+           date_iso8601, region, service, noop_writer);
     }
   }
 }

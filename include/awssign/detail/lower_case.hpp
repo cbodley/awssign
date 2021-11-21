@@ -148,13 +148,13 @@ inline bool operator>=(std::string_view l, lower_case_string r) {
   return !(r > l);
 }
 
-// optimized case-converting writer
-template <typename Writer>
-class lower_case_writer {
+// optimized case-converting stream
+template <typename OutputStream>
+class lower_case_stream {
   static constexpr std::size_t buffer_size = 128;
-  Writer& next;
+  OutputStream& out;
  public:
-  explicit lower_case_writer(Writer& next) : next(next) {}
+  explicit lower_case_stream(OutputStream& out) : out(out) {}
 
   void operator()(const char* begin, const char* end) {
     char buffer[buffer_size];
@@ -162,22 +162,22 @@ class lower_case_writer {
     while (input_remaining > buffer_size) {
       constexpr auto count = buffer_size;
       ::fast_tolower(buffer, begin, count);
-      next(buffer, buffer + count);
+      emit(buffer, buffer + count, out);
 
       input_remaining -= count;
       begin += count;
     }
     std::size_t count = std::min(input_remaining, buffer_size);
     fast_tolower(buffer, begin, count);
-    next(buffer, buffer + count);
+    emit(buffer, buffer + count, out);
   }
 };
 
-// specialize emit() for lower_case_string and lower_case_writer
-template <typename Writer> // void(const char*, const char*)
-std::size_t emit(lower_case_string str, Writer&& out)
+// specialize emit() for lower_case_string and lower_case_stream
+template <typename OutputStream> // void(const char*, const char*)
+void emit(lower_case_string str, OutputStream& out)
 {
-  return emit(static_cast<std::string_view>(str), lower_case_writer{out});
+  emit(static_cast<std::string_view>(str), lower_case_stream{out});
 }
 
 } // namespace awssign::detail
