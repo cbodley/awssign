@@ -99,13 +99,13 @@ inline bool operator==(std::string_view l, lower_case_string r) {
 }
 
 inline bool operator!=(lower_case_string l, lower_case_string r) {
-  return std::equal(l.begin(), l.end(), r.begin(), r.end());
+  return !(l == r);
 }
 inline bool operator!=(lower_case_string l, std::string_view r) {
-  return std::equal(l.begin(), l.end(), r.begin(), r.end());
+  return !(l == r);
 }
 inline bool operator!=(std::string_view l, lower_case_string r) {
-  return std::equal(l.begin(), l.end(), r.begin(), r.end());
+  return !(l == r);
 }
 
 inline bool operator<(lower_case_string l, lower_case_string r) {
@@ -167,8 +167,8 @@ class lower_case_stream {
       input_remaining -= count;
       begin += count;
     }
-    std::size_t count = std::min(input_remaining, buffer_size);
-    fast_tolower(buffer, begin, count);
+    const std::size_t count = input_remaining;
+    ::fast_tolower(buffer, begin, count);
     emit(buffer, buffer + count, out);
   }
 };
