@@ -27,7 +27,8 @@ TEST(canonical_headers, name)
 {
   const auto canonical_name = [] (std::string_view name) {
     std::string result;
-    detail::canonical_header_name(detail::lower_case_string{name}, capture{result});
+    detail::write_canonical_header_name(detail::lower_case_string{name},
+                                        capture{result});
     return result;
   };
   EXPECT_EQ("", canonical_name(""));
@@ -39,7 +40,8 @@ TEST(canonical_headers, value)
 {
   const auto canonical_value = [] (std::string_view value) {
     std::string result;
-    detail::canonical_header_value(value.begin(), value.end(), capture{result});
+    detail::write_canonical_header_value(value.begin(), value.end(),
+                                         capture{result});
     return result;
   };
   EXPECT_EQ("", canonical_value(""));
@@ -56,7 +58,7 @@ TEST(canonical_headers, empty)
 {
   const detail::canonical_header* headers = nullptr;
   std::string result;
-  detail::canonical_headers(headers, headers, capture{result});
+  detail::write_canonical_headers(headers, headers, capture{result});
   EXPECT_EQ("", result);
 }
 
@@ -64,7 +66,7 @@ TEST(canonical_headers, header)
 {
   const auto header = detail::canonical_header{"Name", " value\t"};
   std::string result;
-  detail::canonical_headers(&header, &header + 1, capture{result});
+  detail::write_canonical_headers(&header, &header + 1, capture{result});
   EXPECT_EQ("name:value\n", result);
 }
 
@@ -79,7 +81,7 @@ TEST(canonical_headers, multiple_values)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_headers(canonical, canonical_end, capture{result});
+  detail::write_canonical_headers(canonical, canonical_end, capture{result});
   EXPECT_EQ("name1:value1,VALUE1\nname2:value2\n", result);
 }
 
@@ -96,7 +98,7 @@ TEST(canonical_headers, aws_example)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_headers(canonical, canonical_end, capture{result});
+  detail::write_canonical_headers(canonical, canonical_end, capture{result});
   EXPECT_EQ("content-type:application/x-www-form-urlencoded; charset=utf-8\n"
             "host:iam.amazonaws.com\n"
             "my-header1:a b c\n"
@@ -117,7 +119,7 @@ TEST(canonical_headers, aws4_testsuite_get_header_key_duplicate)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_headers(canonical, canonical_end, capture{result});
+  detail::write_canonical_headers(canonical, canonical_end, capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value2,value2,value1\n"
             "x-amz-date:20150830T123600Z\n", result);
@@ -134,7 +136,7 @@ TEST(canonical_headers, aws4_testsuite_get_header_value_multiline)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_headers(canonical, canonical_end, capture{result});
+  detail::write_canonical_headers(canonical, canonical_end, capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value1 value2 value3\n"
             "x-amz-date:20150830T123600Z\n", result);
@@ -154,7 +156,7 @@ TEST(canonical_headers, aws4_testsuite_get_header_value_order)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_headers(canonical, canonical_end, capture{result});
+  detail::write_canonical_headers(canonical, canonical_end, capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value4,value1,value3,value2\n"
             "x-amz-date:20150830T123600Z\n", result);
@@ -172,7 +174,7 @@ TEST(canonical_headers, aws4_testsuite_get_header_value_trim)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_headers(canonical, canonical_end, capture{result});
+  detail::write_canonical_headers(canonical, canonical_end, capture{result});
   EXPECT_EQ("host:example.amazonaws.com\n"
             "my-header1:value1\n"
             "my-header2:\"a b c\"\n"

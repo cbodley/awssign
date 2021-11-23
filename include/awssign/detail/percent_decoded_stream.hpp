@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <awssign/detail/percent_decode.hpp>
-#include <awssign/detail/emit.hpp>
+#include <awssign/detail/write.hpp>
 
 namespace awssign::detail {
 
-template <typename OutputStream> // void(const char*, const char*)
+template <typename OutputStream>
 struct percent_decoded_stream {
   OutputStream& out;
   enum class state : uint8_t {
@@ -38,7 +38,7 @@ struct percent_decoded_stream {
       } else if (s == state::after_percent) {
         s = state::normal;
         char second_half = percent_decode(*pos);
-        emit(percent_decode(first_half, second_half), out);
+        write(percent_decode(first_half, second_half), out);
         first_half = 0;
         ++pos;
       }
@@ -46,7 +46,7 @@ struct percent_decoded_stream {
   }
 };
 
-template <typename OutputStream> // void(const char*, const char*)
+template <typename OutputStream>
 auto percent_decoded(OutputStream&& out)
   -> percent_decoded_stream<OutputStream>
 {

@@ -3,15 +3,15 @@
 #include <algorithm>
 #include <cctype>
 #include <iterator>
-#include <awssign/detail/emit.hpp>
 #include <awssign/detail/lower_case.hpp>
 #include <awssign/detail/transform.hpp>
+#include <awssign/detail/write.hpp>
 
 namespace awssign::v4::detail {
 
-using awssign::detail::emit;
 using awssign::detail::lower_case_string;
 using awssign::detail::transform_if;
+using awssign::detail::write;
 
 inline bool whitespace(unsigned char c) { return std::isspace(c); }
 
@@ -29,25 +29,25 @@ std::string_view trim(std::string_view str)
   return {i, count};
 }
 
-// convert the header name to lower case
-template <typename OutputStream> // void(Iterator, Iterator)
-void canonical_header_name(lower_case_string name, OutputStream&& out)
+// write the header name in lower case
+template <typename OutputStream>
+void write_canonical_header_name(lower_case_string name, OutputStream&& out)
 {
-  emit(name, out);
+  write(name, out);
 }
 
 // trim any leading/trailing whitespace, and replace any internal whitespace
 // sequences with a single space
-template <typename Iterator, // forward iterator with value_type=char
-          typename OutputStream> // void(Iterator, Iterator)
-void canonical_header_value(Iterator begin, Iterator end, OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_header_value(const char* begin, const char* end,
+                                  OutputStream&& out)
 {
   // skip leading whitespace
   auto i = std::find_if_not(begin, end, whitespace);
   for (;;) {
     auto next = std::find_if(i, end, whitespace);
     if (i != next) {
-      emit(i, next, out);
+      write(i, next, out);
     }
     if (next == end) {
       break;
@@ -57,8 +57,8 @@ void canonical_header_value(Iterator begin, Iterator end, OutputStream&& out)
     if (i == end) { // skip trailing whitespace
       break;
     }
-    // emit a single space
-    emit(' ', out);
+    // write a single space
+    write(' ', out);
   }
 }
 
@@ -95,41 +95,41 @@ OutputIterator sorted_canonical_headers(InputIterator begin,
 
 // write out the sorted headers in canonical format
 template <typename HeaderIterator, // forward canonical_header iterator
-          typename OutputStream> // void(const char*, const char*)
-void canonical_headers(HeaderIterator header0,
-                       HeaderIterator headerN,
-                       OutputStream&& out)
+          typename OutputStream>
+void write_canonical_headers(HeaderIterator header0,
+                             HeaderIterator headerN,
+                             OutputStream&& out)
 {
   lower_case_string last_name;
   for (auto o = header0; o != headerN; ++o) {
     if (last_name == o->name) {
       // comma-separate values with the same header name
-      emit(',', out);
-      canonical_header_value(o->value.begin(), o->value.end(), out);
+      write(',', out);
+      write_canonical_header_value(o->value.begin(), o->value.end(), out);
     } else {
       if (!last_name.empty()) {
         // finish the previous line
-        emit('\n', out);
+        write('\n', out);
       }
       last_name = o->name;
       // write name:value
-      canonical_header_name(o->name, out);
-      emit(':', out);
-      canonical_header_value(o->value.begin(), o->value.end(), out);
+      write_canonical_header_name(o->name, out);
+      write(':', out);
+      write_canonical_header_value(o->value.begin(), o->value.end(), out);
     }
   }
   if (!last_name.empty()) {
     // finish the last line
-    emit('\n', out);
+    write('\n', out);
   }
 }
 
 // write out the sorted header names, separated by semicolon
 template <typename HeaderIterator, // forward canonical_header iterator
-          typename OutputStream> // void(const char*, const char*)
-void signed_headers(HeaderIterator header0,
-                    HeaderIterator headerN,
-                    OutputStream&& out)
+          typename OutputStream>
+void write_signed_headers(HeaderIterator header0,
+                          HeaderIterator headerN,
+                          OutputStream&& out)
 {
   lower_case_string last_name;
   for (auto o = header0; o != headerN; ++o) {
@@ -137,10 +137,10 @@ void signed_headers(HeaderIterator header0,
       continue; // skip duplicate header names
     }
     if (!last_name.empty()) { // separate header names with ;
-      emit(';', out);
+      write(';', out);
     }
     last_name = o->name;
-    canonical_header_name(o->name, out);
+    write_canonical_header_name(o->name, out);
   }
 }
 

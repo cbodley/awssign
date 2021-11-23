@@ -15,7 +15,7 @@ struct capture {
 std::string canonicalize(std::string_view name)
 {
   std::string result;
-  detail::canonical_query(name.begin(), name.end(), capture{result});
+  detail::write_canonical_query(name.begin(), name.end(), capture{result});
   return result;
 }
 

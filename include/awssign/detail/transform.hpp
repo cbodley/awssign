@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <iterator>
 #include <string_view>
-#include <awssign/detail/emit.hpp>
+#include <awssign/detail/write.hpp>
 
 namespace awssign::detail {
 
 template <typename Iterator,
           typename BinaryOperation, // void(*Iterator, OutputStream&)
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 void transform(Iterator begin, Iterator end,
                BinaryOperation&& op,
                OutputStream&& out)
@@ -22,7 +22,7 @@ void transform(Iterator begin, Iterator end,
 template <typename Iterator,
           typename UnaryPredicate, // bool(*Iterator)
           typename BinaryOperation, // void(*Iterator, OutputStream&)
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 void transform_if(Iterator begin, Iterator end,
                   UnaryPredicate&& p,
                   BinaryOperation&& op,
@@ -32,7 +32,7 @@ void transform_if(Iterator begin, Iterator end,
   for (;;) {
     auto next = std::find_if(i, end, p);
     if (i != next) { // write earlier characters that didn't match
-      emit(i, next, out);
+      write(i, next, out);
     }
     if (next == end) {
       break;

@@ -15,8 +15,8 @@ struct capture {
 TEST(string_to_sign, basic)
 {
   std::string result;
-  detail::string_to_sign("SHA256", "20130524T000000Z", "us-east-1", "s3",
-                         "abcdefg", capture{result});
+  detail::write_string_to_sign("SHA256", "20130524T000000Z", "us-east-1", "s3",
+                               "abcdefg", capture{result});
   EXPECT_EQ(result, R"(AWS4-HMAC-SHA256
 20130524T000000Z
 20130524/us-east-1/s3/aws4_request
@@ -26,8 +26,8 @@ abcdefg)");
 TEST(string_to_sign, empty_timestamp)
 {
   std::string result;
-  detail::string_to_sign("SHA256", "", "us-east-1", "s3",
-                         "abcdefg", capture{result});
+  detail::write_string_to_sign("SHA256", "", "us-east-1", "s3",
+                               "abcdefg", capture{result});
   EXPECT_EQ(result, R"(AWS4-HMAC-SHA256
 
 /us-east-1/s3/aws4_request

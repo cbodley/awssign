@@ -1,6 +1,5 @@
 #pragma once
 
-#include <awssign/detail/buffered_stream.hpp>
 #include <awssign/detail/digest.hpp>
 #include <awssign/detail/digest_stream.hpp>
 #include <awssign/detail/hex_encode.hpp>
@@ -14,36 +13,35 @@ namespace awssign::v4 {
 
 namespace detail {
 
-using awssign::detail::buffered;
+using awssign::detail::buffered_digest_stream;
 using awssign::detail::digest;
-using awssign::detail::digest_stream;
 using awssign::detail::hex_encode;
 using awssign::detail::hmac;
 using awssign::detail::output_stream;
 
 // write the Authorization header value
 template <typename HeaderIterator,
-          typename OutputStream> // void(const char*, const char*)
-void authorization_header_value(std::string_view hash_algorithm,
-                                std::string_view access_key_id,
-                                std::string_view date,
-                                std::string_view region,
-                                std::string_view service,
-                                HeaderIterator canonical_header0,
-                                HeaderIterator canonical_headerN,
-                                std::string_view signature,
-                                OutputStream&& out)
+          typename OutputStream>
+void write_authorization_header_value(std::string_view hash_algorithm,
+                                      std::string_view access_key_id,
+                                      std::string_view date,
+                                      std::string_view region,
+                                      std::string_view service,
+                                      HeaderIterator canonical_header0,
+                                      HeaderIterator canonical_headerN,
+                                      std::string_view signature,
+                                      OutputStream&& out)
 {
-  emit("AWS4-HMAC-", out);
-  emit(hash_algorithm, out);
-  emit(" Credential=", out);
-  emit(access_key_id, out);
-  emit('/', out);
-  scope(date, region, service, out);
-  emit(", SignedHeaders=", out);
-  signed_headers(canonical_header0, canonical_headerN, out);
-  emit(", Signature=", out);
-  emit(signature, out);
+  write("AWS4-HMAC-", out);
+  write(hash_algorithm, out);
+  write(" Credential=", out);
+  write(access_key_id, out);
+  write('/', out);
+  write_scope(date, region, service, out);
+  write(", SignedHeaders=", out);
+  write_signed_headers(canonical_header0, canonical_headerN, out);
+  write(", Signature=", out);
+  write(signature, out);
 }
 
 } // namespace detail
@@ -51,7 +49,7 @@ void authorization_header_value(std::string_view hash_algorithm,
 // generate a signature for the given request, and write the Authorization
 // header's value to output
 template <typename HeaderIterator,
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 void sign(const char* hash_algorithm,
           std::string_view access_key_id,
           std::string_view secret_access_key,
@@ -78,11 +76,11 @@ void sign(const char* hash_algorithm,
   char canonical_buffer[detail::digest::max_size * 2]; // hex encoded
   std::string_view canonical_request_hash;
   {
-    detail::digest hash{hash_algorithm};
-    detail::digest_stream stream{hash};
-    detail::canonical_request(service, method, uri_path, query,
-                              canonical_header0, canonical_headerN,
-                              payload_hash, detail::buffered<256>(stream));
+    auto hash = detail::digest{hash_algorithm};
+    detail::write_canonical_request(service, method, uri_path, query,
+                                    canonical_header0, canonical_headerN,
+                                    payload_hash,
+                                    detail::buffered_digest_stream(hash));
     unsigned char buffer[detail::digest::max_size];
     const auto size = hash.finish(buffer);
     char* pos = canonical_buffer;
@@ -102,10 +100,10 @@ void sign(const char* hash_algorithm,
   char signature_buffer[detail::hmac::max_size * 2]; // hex encoded
   std::string_view signature;
   {
-    detail::hmac hash{hash_algorithm, signing_key, signing_key_size};
-    detail::digest_stream stream{hash};
-    detail::string_to_sign(hash_algorithm, date, region, service,
-                           canonical_request_hash, detail::buffered<256>(stream));
+    auto hash = detail::hmac{hash_algorithm, signing_key, signing_key_size};
+    detail::write_string_to_sign(hash_algorithm, date, region, service,
+                                 canonical_request_hash,
+                                 detail::buffered_digest_stream(hash));
     unsigned char buffer[detail::hmac::max_size];
     const auto size = hash.finish(buffer);
     char* pos = signature_buffer;
@@ -115,7 +113,7 @@ void sign(const char* hash_algorithm,
   }
 
   // write the Authorization header value
-  return detail::authorization_header_value(
+  return detail::write_authorization_header_value(
       hash_algorithm, access_key_id, date, region, service,
       canonical_header0, canonical_headerN, signature, out);
 }

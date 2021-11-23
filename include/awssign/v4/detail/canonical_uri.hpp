@@ -2,20 +2,20 @@
 
 #include <algorithm>
 #include <cctype>
-#include <awssign/detail/emit.hpp>
+#include <awssign/detail/write.hpp>
 #include <awssign/detail/percent_encode.hpp>
 #include <awssign/detail/transform.hpp>
 
 namespace awssign::v4::detail {
 
-using awssign::detail::emit;
+using awssign::detail::write;
 using awssign::detail::need_percent_encode;
 using awssign::detail::percent_encode_twice;
 using awssign::detail::transform_if;
 
 inline bool is_slash(char c) { return c == '/'; }
 
-template <typename Visitor> // void(const char*, const char*)
+template <typename Visitor>
 void visit_path_segments(const char* begin, const char* end, Visitor&& visitor)
 {
   auto i = std::find_if_not(begin, end, is_slash);
@@ -99,9 +99,9 @@ SegmentIterator build_segment_stack(const char* in0, const char* inN,
   return pos;
 }
 
-template <typename OutputStream> // void(const char*, const char*)
-void canonical_path_segment(const char* begin, const char* end,
-                            OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_path_segment(const char* begin, const char* end,
+                                  OutputStream&& out)
 {
   constexpr auto double_escape = [] (char c, OutputStream& out) {
     return percent_encode_twice(c, out);
@@ -111,9 +111,9 @@ void canonical_path_segment(const char* begin, const char* end,
 
 /// output an absolute uri path in canonical form, where the path is normalized
 /// and each path segment is double-percent-encoded
-template <typename OutputStream> // void(const char*, const char*)
-void canonical_uri(const char* begin, const char* end,
-                   OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_uri(const char* begin, const char* end,
+                         OutputStream&& out)
 {
   const auto count = max_segment_stack_size(begin, end);
   // allocate array for segment stack
@@ -127,16 +127,16 @@ void canonical_uri(const char* begin, const char* end,
   // build segment stack
   segments_end = build_segment_stack(begin, end, segments, segments_end);
   if (segments == segments_end) {
-    emit('/', out);
+    write('/', out);
     return;
   }
   // write out each segment with double percent encoding
   for (auto segment = segments; segment != segments_end; ++segment) {
-    emit('/', out);
-    canonical_path_segment(segment->begin, segment->end, out);
+    write('/', out);
+    write_canonical_path_segment(segment->begin, segment->end, out);
   }
   if (*std::prev(end) == '/') {
-    emit('/', out); // input has a trailing slash
+    write('/', out); // input has a trailing slash
   }
 }
 

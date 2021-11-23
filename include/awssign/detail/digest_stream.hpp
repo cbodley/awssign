@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <awssign/detail/buffered_stream.hpp>
 
 namespace awssign::detail {
 
@@ -15,5 +16,14 @@ class digest_stream {
     digest.update(begin, std::distance(begin, end));
   }
 };
+
+// create a buffered digest stream that buffers up to 256 bytes before calling
+// into the digest. hash performance on these buffers is much better than with
+// many tiny buffers
+template <typename Digest>
+auto buffered_digest_stream(Digest& digest)
+{
+  return buffered<256>(digest_stream{digest});
+}
 
 } // namespace awssign::detail

@@ -18,7 +18,7 @@ std::string decode(Args&& ...args)
   std::string result;
   auto writer = capture{result};
   auto decoder = detail::percent_decoded(writer);
-  (detail::emit(std::begin(args), std::end(args) - 1, decoder), ...);
+  (detail::write(std::begin(args), std::end(args) - 1, decoder), ...);
   return result;
 }
 

@@ -40,8 +40,9 @@ TEST(canonical_request, aws4_testsuite_get_header_key_duplicate)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_request("iam", "GET", "/", "", canonical, canonical_end,
-                            empty_payload_hash, capture{result});
+  detail::write_canonical_request("iam", "GET", "/", "",
+                                  canonical, canonical_end,
+                                  empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -64,8 +65,9 @@ TEST(canonical_request, aws4_testsuite_get_header_value_multiline)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_request("iam", "GET", "/", "", canonical, canonical_end,
-                            empty_payload_hash, capture{result});
+  detail::write_canonical_request("iam", "GET", "/", "",
+                                  canonical, canonical_end,
+                                  empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -91,8 +93,9 @@ TEST(canonical_request, aws4_testsuite_get_header_value_order)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_request("iam", "GET", "/", "", canonical, canonical_end,
-                            empty_payload_hash, capture{result});
+  detail::write_canonical_request("iam", "GET", "/", "",
+                                  canonical, canonical_end,
+                                  empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 
@@ -116,8 +119,9 @@ TEST(canonical_request, aws4_testsuite_get_header_value_trim)
   const auto canonical_end = detail::sorted_canonical_headers(
       std::begin(headers), std::end(headers), canonical);
   std::string result;
-  detail::canonical_request("iam", "GET", "/", "", canonical, canonical_end,
-                            empty_payload_hash, capture{result});
+  detail::write_canonical_request("iam", "GET", "/", "",
+                                  canonical, canonical_end,
+                                  empty_payload_hash, capture{result});
   EXPECT_EQ(result, R"(GET
 /
 

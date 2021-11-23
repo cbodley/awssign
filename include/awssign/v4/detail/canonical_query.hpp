@@ -2,16 +2,15 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <awssign/detail/emit.hpp>
 #include <awssign/detail/percent_encode.hpp>
 #include <awssign/detail/percent_decoded_iterator.hpp>
 #include <awssign/detail/percent_decoded_stream.hpp>
 #include <awssign/detail/transform.hpp>
 #include <awssign/detail/transform_stream.hpp>
+#include <awssign/detail/write.hpp>
 
 namespace awssign::v4::detail {
 
-using awssign::detail::emit;
 using awssign::detail::need_percent_encode;
 using awssign::detail::percent_decoded;
 using awssign::detail::percent_decoded_iterator;
@@ -19,6 +18,7 @@ using awssign::detail::percent_encode;
 using awssign::detail::percent_encode_twice;
 using awssign::detail::transform_if;
 using awssign::detail::transformed_if;
+using awssign::detail::write;
 
 template <typename OutputIterator> // forward parameter iterator
 OutputIterator parse_query_parameters(const char* begin, const char* end,
@@ -38,9 +38,9 @@ OutputIterator parse_query_parameters(const char* begin, const char* end,
   return out;
 }
 
-template <typename OutputStream> // void(const char*, const char*)
-void canonical_parameter_name(const char* begin, const char* end,
-                              OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_parameter_name(const char* begin, const char* end,
+                                    OutputStream&& out)
 {
   constexpr auto escape = [] (char c, OutputStream& out) {
     // spaces must be encoded as ' ', not '+'
@@ -48,12 +48,12 @@ void canonical_parameter_name(const char* begin, const char* end,
   };
   auto encoder = transformed_if(need_percent_encode, escape, out);
   auto decoder = percent_decoded(encoder);
-  return emit(begin, end, decoder);
+  return write(begin, end, decoder);
 }
 
-template <typename OutputStream> // void(const char*, const char*)
-void canonical_parameter_value(const char* begin, const char* end,
-                               OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_parameter_value(const char* begin, const char* end,
+                                     OutputStream&& out)
 {
   constexpr auto escape = [] (char c, OutputStream& out) {
     if (c == '=') { // = in the value gets double-encoded
@@ -65,25 +65,25 @@ void canonical_parameter_value(const char* begin, const char* end,
   };
   auto encoder = transformed_if(need_percent_encode, escape, out);
   auto decoder = percent_decoded(encoder);
-  emit(begin, end, decoder);
+  write(begin, end, decoder);
 }
 
-template <typename OutputStream> // void(const char*, const char*)
-void canonical_parameter(const char* begin, const char* end,
-                         OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_parameter(const char* begin, const char* end,
+                               OutputStream&& out)
 {
   auto delim = std::find(begin, end, '=');
-  canonical_parameter_name(begin, delim, out);
-  emit('=', out);
+  write_canonical_parameter_name(begin, delim, out);
+  write('=', out);
   if (delim != end) {
-    canonical_parameter_value(std::next(delim), end, out);
+    write_canonical_parameter_value(std::next(delim), end, out);
   }
 }
 
 // write the query string to output in canonical form
-template <typename OutputStream> // void(const char*, const char*)
-void canonical_query(const char* begin, const char* end,
-                     OutputStream&& out)
+template <typename OutputStream>
+void write_canonical_query(const char* begin, const char* end,
+                           OutputStream&& out)
 {
   if (begin == end) {
     return;
@@ -128,9 +128,9 @@ void canonical_query(const char* begin, const char* end,
     if (first) {
       first = false;
     } else {
-      emit('&', out);
+      write('&', out);
     }
-    canonical_parameter(param->begin, param->end, out);
+    write_canonical_parameter(param->begin, param->end, out);
   }
 }
 

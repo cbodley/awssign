@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <iterator>
-#include <awssign/detail/emit.hpp>
+#include <awssign/detail/write.hpp>
 #include <awssign/detail/fast_tolower.h>
 
 namespace awssign::detail {
@@ -162,22 +162,22 @@ class lower_case_stream {
     while (input_remaining > buffer_size) {
       constexpr auto count = buffer_size;
       ::fast_tolower(buffer, begin, count);
-      emit(buffer, buffer + count, out);
+      write(buffer, buffer + count, out);
 
       input_remaining -= count;
       begin += count;
     }
     const std::size_t count = input_remaining;
     ::fast_tolower(buffer, begin, count);
-    emit(buffer, buffer + count, out);
+    write(buffer, buffer + count, out);
   }
 };
 
-// specialize emit() for lower_case_string and lower_case_stream
-template <typename OutputStream> // void(const char*, const char*)
-void emit(lower_case_string str, OutputStream& out)
+// specialize write() for lower_case_string and lower_case_stream
+template <typename OutputStream>
+void write(lower_case_string str, OutputStream& out)
 {
-  emit(static_cast<std::string_view>(str), lower_case_stream{out});
+  write(static_cast<std::string_view>(str), lower_case_stream{out});
 }
 
 } // namespace awssign::detail

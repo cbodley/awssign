@@ -1,6 +1,5 @@
 #pragma once
 
-#include <awssign/detail/buffered_stream.hpp>
 #include <awssign/detail/digest.hpp>
 #include <awssign/detail/digest_stream.hpp>
 #include <awssign/detail/hex_encode.hpp>
@@ -15,9 +14,8 @@ namespace awssign::v4 {
 
 namespace detail {
 
-using awssign::detail::buffered;
+using awssign::detail::buffered_digest_stream;
 using awssign::detail::digest;
-using awssign::detail::digest_stream;
 using awssign::detail::hex_encode;
 using awssign::detail::hmac;
 using awssign::detail::output_stream;
@@ -59,11 +57,11 @@ bool verify(const char* hash_algorithm,
   char canonical_buffer[detail::digest::max_size * 2]; // hex encoded
   std::string_view canonical_request_hash;
   {
-    detail::digest hash{hash_algorithm};
-    detail::digest_stream stream{hash};
-    detail::canonical_request(service, method, uri_path, query,
-                              filtered_header0, filtered_headerN,
-                              payload_hash, detail::buffered<256>(stream));
+    auto hash = detail::digest{hash_algorithm};
+    detail::write_canonical_request(service, method, uri_path, query,
+                                    filtered_header0, filtered_headerN,
+                                    payload_hash,
+                                    detail::buffered_digest_stream(hash));
     unsigned char buffer[detail::digest::max_size];
     const auto size = hash.finish(buffer);
     char* pos = canonical_buffer;
@@ -80,10 +78,10 @@ bool verify(const char* hash_algorithm,
 
   // sign the string-to-sign
   char signature_buffer[detail::hmac::max_size * 2]; // hex encoded
-  detail::hmac hash{hash_algorithm, signing_key, signing_key_size};
-  detail::digest_stream stream{hash};
-  detail::string_to_sign(hash_algorithm, date, region, service,
-                         canonical_request_hash, detail::buffered<256>(stream));
+  auto hash = detail::hmac{hash_algorithm, signing_key, signing_key_size};
+  detail::write_string_to_sign(hash_algorithm, date, region, service,
+                               canonical_request_hash,
+                               detail::buffered_digest_stream(hash));
   unsigned char buffer[detail::hmac::max_size];
   const auto size = hash.finish(buffer);
   char* pos = signature_buffer;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-#include <awssign/detail/buffered_stream.hpp>
 #include <awssign/detail/digest.hpp>
 #include <awssign/detail/digest_stream.hpp>
 #include <awssign/detail/hex_encode.hpp>
@@ -16,38 +15,37 @@ namespace awssign::v4 {
 
 namespace detail {
 
-using awssign::detail::buffered;
+using awssign::detail::buffered_digest_stream;
 using awssign::detail::digest;
-using awssign::detail::digest_stream;
 using awssign::detail::hmac;
 using awssign::detail::hex_encode;
 using awssign::detail::output_stream;
 using awssign::detail::transformed_if;
 
 // encode the value of the X-Amz-Credential param
-template <typename OutputStream> // void(const char*, const char*)
-void emit_credential(std::string_view access_key_id,
-                     std::string_view date,
-                     std::string_view region,
-                     std::string_view service,
-                     OutputStream&& out)
+template <typename OutputStream>
+void write_credential(std::string_view access_key_id,
+                      std::string_view date,
+                      std::string_view region,
+                      std::string_view service,
+                      OutputStream&& out)
 {
-  emit(access_key_id, out);
-  emit('/', out);
-  scope(date, region, service, out);
+  write(access_key_id, out);
+  write('/', out);
+  write_scope(date, region, service, out);
 }
 
 template <typename HeaderIterator, // forward canonical_header iterator
-          typename OutputStream> // void(const char*, const char*)
-void emit_signed_params(const char* hash_algorithm,
-                        std::string_view access_key_id,
-                        std::string_view region,
-                        std::string_view service,
-                        std::string_view date,
-                        std::string_view expiration,
-                        HeaderIterator header0,
-                        HeaderIterator headerN,
-                        OutputStream&& out)
+          typename OutputStream>
+void write_signed_params(const char* hash_algorithm,
+                         std::string_view access_key_id,
+                         std::string_view region,
+                         std::string_view service,
+                         std::string_view date,
+                         std::string_view expiration,
+                         HeaderIterator header0,
+                         HeaderIterator headerN,
+                         OutputStream&& out)
 {
   constexpr auto escape = [] (char c, OutputStream& out) {
     // spaces must be encoded as ' ', not '+'
@@ -55,22 +53,22 @@ void emit_signed_params(const char* hash_algorithm,
   };
 
   // querystring += &X-Amz-Algorithm=algorithm
-  emit("X-Amz-Algorithm=AWS4-HMAC-", out);
-  emit(hash_algorithm, out);
+  write("X-Amz-Algorithm=AWS4-HMAC-", out);
+  write(hash_algorithm, out);
   // querystring += &X-Amz-Credential= urlencode(access_key_ID + '/' + credential_scope)
-  emit("&X-Amz-Credential=", out);
-  emit_credential(access_key_id, date, region, service,
-                  transformed_if(need_percent_encode, escape, out));
+  write("&X-Amz-Credential=", out);
+  write_credential(access_key_id, date, region, service,
+                   transformed_if(need_percent_encode, escape, out));
   // querystring += &X-Amz-Date=date
-  emit("&X-Amz-Date=", out);
-  emit(date, out);
+  write("&X-Amz-Date=", out);
+  write(date, out);
   // querystring += &X-Amz-Expires=timeout interval
-  emit("&X-Amz-Expires=", out);
-  emit(expiration, out);
+  write("&X-Amz-Expires=", out);
+  write(expiration, out);
   // querystring += &X-Amz-SignedHeaders=signed_headers
-  emit("&X-Amz-SignedHeaders=", out);
-  signed_headers(header0, headerN, transformed_if(need_percent_encode,
-                                                  escape, out));
+  write("&X-Amz-SignedHeaders=", out);
+  write_signed_headers(header0, headerN,
+                       transformed_if(need_percent_encode, escape, out));
 }
 
 struct query_stream {
@@ -138,9 +136,9 @@ char* presign(const char* hash_algorithm,
   // append the presigned query params that are part of the canonical request
   auto query_stream = detail::query_stream(query_end, query_capacity);
   if (query_begin == query_end) {
-    detail::emit('?', query_stream);
+    detail::write('?', query_stream);
   }
-  emit_signed_params(hash_algorithm, access_key_id,
+  write_signed_params(hash_algorithm, access_key_id,
                      region, service, date, expiration,
                      canonical_header0, canonical_headerN, query_stream);
 
@@ -166,12 +164,12 @@ char* presign(const char* hash_algorithm,
   char canonical_buffer[detail::digest::max_size * 2]; // hex encoded
   std::string_view canonical_request_hash;
   {
-    detail::digest hash{hash_algorithm};
-    detail::digest_stream stream{hash};
-    detail::canonical_request(service, method, uri_path,
-                              query.substr(1), // skip ?
-                              canonical_header0, canonical_headerN,
-                              payload_hash, detail::buffered<256>(stream));
+    auto hash = detail::digest{hash_algorithm};
+    detail::write_canonical_request(service, method, uri_path,
+                                    query.substr(1), // skip '?'
+                                    canonical_header0, canonical_headerN,
+                                    payload_hash,
+                                    detail::buffered_digest_stream(hash));
     unsigned char buffer[detail::digest::max_size];
     const auto size = hash.finish(buffer);
     char* pos = canonical_buffer;
@@ -184,11 +182,10 @@ char* presign(const char* hash_algorithm,
   char signature_buffer[detail::hmac::max_size * 2]; // hex encoded
   std::string_view signature;
   {
-    detail::hmac hash{hash_algorithm, signing_key, signing_key_size};
-    detail::digest_stream stream{hash};
-    detail::string_to_sign(hash_algorithm, date, region, service,
-                           canonical_request_hash,
-                           detail::buffered<256>(stream));
+    auto hash = detail::hmac{hash_algorithm, signing_key, signing_key_size};
+    detail::write_string_to_sign(hash_algorithm, date, region, service,
+                                 canonical_request_hash,
+                                 detail::buffered_digest_stream(hash));
     unsigned char buffer[detail::hmac::max_size];
     const auto size = hash.finish(buffer);
     char* pos = signature_buffer;
@@ -198,8 +195,8 @@ char* presign(const char* hash_algorithm,
   }
 
   // append the X-Amz-Signature param
-  detail::emit(signature_param, query_stream);
-  detail::emit(signature, query_stream);
+  detail::write(signature_param, query_stream);
+  detail::write(signature, query_stream);
   return query_stream.pos;
 }
 

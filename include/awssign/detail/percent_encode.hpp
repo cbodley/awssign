@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdio>
-#include <awssign/detail/emit.hpp>
+#include <awssign/detail/write.hpp>
 
 namespace awssign::detail {
 
@@ -28,23 +28,23 @@ inline bool need_percent_encode(unsigned char c)
   return !unreserved[c];
 }
 
-template <typename OutputStream> // void(const char*, const char*)
+template <typename OutputStream>
 void percent_encode(unsigned char c, OutputStream&& out)
 {
   constexpr auto table = std::string_view{"0123456789ABCDEF"};
-  emit('%', out);
-  emit(table[c >> 4], out); // high 4 bits
-  emit(table[c & 0xf], out); // low 4 bits
+  write('%', out);
+  write(table[c >> 4], out); // high 4 bits
+  write(table[c & 0xf], out); // low 4 bits
 }
 
 // the only difference with double-encoding is that the % is encoded as %25
-template <typename OutputStream> // void(const char*, const char*)
+template <typename OutputStream>
 void percent_encode_twice(unsigned char c, OutputStream&& out)
 {
   constexpr auto table = std::string_view{"0123456789ABCDEF"};
-  emit("%25", out);
-  emit(table[c >> 4], out); // high 4 bits
-  emit(table[c & 0xf], out); // low 4 bits
+  write("%25", out);
+  write(table[c >> 4], out); // high 4 bits
+  write(table[c & 0xf], out); // low 4 bits
 }
 
 } // namespace awssign::detail

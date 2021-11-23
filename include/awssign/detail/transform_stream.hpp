@@ -5,7 +5,7 @@
 namespace awssign::detail {
 
 template <typename BinaryOperation, // size_t(char, OutputStream&)
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 struct transform_stream {
   BinaryOperation op;
   OutputStream& out;
@@ -16,7 +16,7 @@ struct transform_stream {
 };
 
 template <typename BinaryOperation, // size_t(char, OutputStream&)
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 auto transformed(BinaryOperation&& op, OutputStream&& out)
   -> transform_stream<BinaryOperation, OutputStream>
 {
@@ -25,7 +25,7 @@ auto transformed(BinaryOperation&& op, OutputStream&& out)
 
 template <typename UnaryPredicate, // bool(char)
           typename BinaryOperation, // size_t(char, OutputStream&)
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 struct transform_if_stream {
   UnaryPredicate pred;
   BinaryOperation op;
@@ -38,7 +38,7 @@ struct transform_if_stream {
 
 template <typename UnaryPredicate, // bool(char)
           typename BinaryOperation, // size_t(char, OutputStream&)
-          typename OutputStream> // void(const char*, const char*)
+          typename OutputStream>
 auto transformed_if(UnaryPredicate&& p,
                     BinaryOperation&& op,
                     OutputStream&& out)

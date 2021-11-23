@@ -12,12 +12,12 @@ class buffered_stream {
   using array_type = std::array<char, Size>;
   using iterator_type = typename array_type::iterator;
 
-  OutputStream& out;
+  OutputStream out;
   array_type buffer;
   iterator_type buffer_pos;
  public:
-  buffered_stream(OutputStream& out) noexcept
-      : out(out), buffer_pos(buffer.begin())
+  buffered_stream(OutputStream&& out) noexcept
+      : out(std::move(out)), buffer_pos(buffer.begin())
   {}
   ~buffered_stream() {
     if (buffer.begin() != buffer_pos) { // flush any buffered data

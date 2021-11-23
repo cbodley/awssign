@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cctype>
-#include <awssign/detail/emit.hpp>
+#include <awssign/detail/write.hpp>
 #include <awssign/detail/percent_encode.hpp>
 #include <awssign/detail/transform.hpp>
 
 namespace awssign::v4::detail {
 
-using awssign::detail::emit;
+using awssign::detail::write;
 using awssign::detail::percent_encode;
 using awssign::detail::transform_if;
 
@@ -37,12 +37,12 @@ inline bool need_percent_encode_no_slash(unsigned char c)
 
 /// output an absolute uri path in s3-canonical form, which percent-encodes the
 /// path without any normalization
-template <typename OutputStream> // void(const char*, const char*)
-void s3_canonical_uri(const char* begin, const char* end,
-                      OutputStream&& out)
+template <typename OutputStream>
+void write_s3_canonical_uri(const char* begin, const char* end,
+                            OutputStream&& out)
 {
   if (begin == end) {
-    emit('/', out);
+    write('/', out);
     return;
   }
   constexpr auto escape = [] (char c, OutputStream& out) {
