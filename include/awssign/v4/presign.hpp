@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <awssign/detail/digest.hpp>
 #include <awssign/detail/digest_stream.hpp>
 #include <awssign/detail/hex_encode.hpp>
