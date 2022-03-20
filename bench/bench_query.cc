@@ -8,7 +8,7 @@ struct header_type {
                         std::string_view value) noexcept
       : name_(name), value_(value)
   {}
-  constexpr std::string_view name() const { return name_; }
+  constexpr std::string_view name_string() const { return name_; }
   constexpr std::string_view value() const { return value_; }
  private:
   std::string_view name_;

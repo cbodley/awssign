@@ -16,7 +16,7 @@ struct header_type {
   header_type(std::string_view name, std::string_view value) noexcept
       : name_(name), value_(value)
   {}
-  std::string_view name() const { return name_; }
+  std::string_view name_string() const { return name_; }
   std::string_view value() const { return value_; }
  private:
   std::string_view name_;

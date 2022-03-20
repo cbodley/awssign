@@ -86,7 +86,7 @@ OutputIterator sorted_canonical_headers(InputIterator begin,
   // initialize the canonical header array
   auto o = out;
   for (auto i = begin; i != end; ++o, ++i) {
-    *o = canonical_header{i->name(), i->value()};
+    *o = canonical_header{i->name_string(), i->value()};
   }
   // stable sort headers by canonical name
   std::stable_sort(out, o);

@@ -18,7 +18,7 @@ constexpr std::string_view service = "service";
 void noop_writer(const char*, const char*) {}
 
 struct header_type {
-  std::string_view name() const { return name_; }
+  std::string_view name_string() const { return name_; }
   std::string_view value() const { return value_; }
 
   std::string name_;
