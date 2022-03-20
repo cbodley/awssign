@@ -12,6 +12,10 @@ add_executable(test_percent_decode test_percent_decode.cc)
 target_link_libraries(test_percent_decode awssign address-sanitizer gtest gtest_main)
 add_test(test_percent_decode test_percent_decode)
 
+add_executable(test_v4_authorization_header test_v4_authorization_header.cc)
+target_link_libraries(test_v4_authorization_header awssign address-sanitizer gtest gtest_main)
+add_test(test_v4_authorization_header test_v4_authorization_header)
+
 add_executable(test_v4_credential_scope test_v4_credential_scope.cc)
 target_link_libraries(test_v4_credential_scope awssign address-sanitizer gtest gtest_main)
 add_test(test_v4_credential_scope test_v4_credential_scope)
