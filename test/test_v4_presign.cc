@@ -151,4 +151,28 @@ TEST(presign, aws4_testsuite_get_header_value_trim)
 &X-Amz-Signature=e7bb0fd515e125e1aec2ecc4c0c17484fb06f6846b927c35e46005dd3df3acd4");
 }
 
+TEST(presign, append_params)
+{
+  const header_type headers[] = {
+    {"Host", "example.amazonaws.com"},
+    {"My-Header1", " value1"},
+  };
+  char query[512] = "?key1=value1&key2=value2";
+  char* query_capacity = std::end(query);
+  char* query_end = std::find(query, query_capacity, '\0');
+  query_end = presign("SHA256", access_key_id, secret_access_key,
+                      "us-east-1", "service", "20150830T123600Z",
+                      "3600", "GET", "/", std::begin(headers),
+                      std::end(headers), empty_payload_hash,
+                      query, query_end, query_capacity);
+  EXPECT_EQ(std::string_view(query, std::distance(query, query_end)),
+            "?key1=value1&key2=value2\
+&X-Amz-Algorithm=AWS4-HMAC-SHA256\
+&X-Amz-Credential=AKIDEXAMPLE%2F20150830%2Fus-east-1%2Fservice%2Faws4_request\
+&X-Amz-Date=20150830T123600Z\
+&X-Amz-Expires=3600\
+&X-Amz-SignedHeaders=host%3Bmy-header1\
+&X-Amz-Signature=8b560b58296dbcbc859e1478bd50c94abca8b81b17e68cc4a084f66b410bf70c");
+}
+
 } // namespace awssign::v4

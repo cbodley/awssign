@@ -136,6 +136,8 @@ char* presign(const char* hash_algorithm,
   auto query_stream = detail::query_stream(query_end, query_capacity);
   if (query_begin == query_end) {
     detail::write('?', query_stream);
+  } else {
+    detail::write('&', query_stream);
   }
   detail::write_signed_params(hash_algorithm, access_key_id,
                               region, service, date, expiration,
