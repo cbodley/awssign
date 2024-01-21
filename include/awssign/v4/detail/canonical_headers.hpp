@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cctype>
 #include <iterator>
 #include <awssign/detail/lower_case.hpp>
 #include <awssign/detail/transform.hpp>
@@ -13,7 +12,20 @@ using awssign::detail::lower_case_string;
 using awssign::detail::transform_if;
 using awssign::detail::write;
 
-inline bool whitespace(unsigned char c) { return std::isspace(c); }
+inline bool whitespace(unsigned char c)
+{
+  switch (c) {
+    case ' ':
+    case '\f':
+    case '\n':
+    case '\r':
+    case '\t':
+    case '\v':
+      return true;
+    default:
+      return false;
+  }
+}
 
 // return the string with any leading/tailing whitespace trimmed
 std::string_view trim(std::string_view str)
