@@ -4,6 +4,3 @@
 [submodule "bench/dependency/benchmark"]
 	path = bench/dependency/benchmark
 	url = https://github.com/google/benchmark.git
-[submodule "dependency/fast_tolower"]
-	path = dependency/fast_tolower
-	url = https://github.com/andrew-canaday/fast_tolower/
