@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <awssign/detail/percent_decode.hpp>
 #include <awssign/detail/write.hpp>
 
