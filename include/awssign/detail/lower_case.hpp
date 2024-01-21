@@ -1,12 +1,20 @@
 #pragma once
 
 #include <algorithm>
-#include <cctype>
 #include <iterator>
 #include <awssign/detail/write.hpp>
-#include <awssign/detail/fast_tolower.h>
 
 namespace awssign::detail {
+
+constexpr inline char to_lower(char c) {
+  return ('A' <= c && c <= 'Z') ? c^0x20 : c;
+}
+
+constexpr inline void to_lower(char* out, const char* in, std::size_t count) {
+  for (std::size_t i = 0; i < count; i++) {
+    out[i] = to_lower(in[i]);
+  }
+}
 
 // a case-converting string_view wrapper
 class lower_case_string {
@@ -58,7 +66,7 @@ class lower_case_string {
       return pos++;
     }
     value_type operator*() const {
-      return std::tolower(static_cast<unsigned char>(*pos));
+      return to_lower(*pos);
     }
     friend bool operator==(const const_iterator& l, const const_iterator& r) {
       return l.pos == r.pos;
@@ -161,14 +169,14 @@ class lower_case_stream {
     std::size_t input_remaining = std::distance(begin, end);
     while (input_remaining > buffer_size) {
       constexpr auto count = buffer_size;
-      ::fast_tolower(buffer, begin, count);
+      to_lower(buffer, begin, count);
       write(buffer, buffer + count, out);
 
       input_remaining -= count;
       begin += count;
     }
     const std::size_t count = input_remaining;
-    ::fast_tolower(buffer, begin, count);
+    to_lower(buffer, begin, count);
     write(buffer, buffer + count, out);
   }
 };
