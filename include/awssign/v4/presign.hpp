@@ -137,9 +137,10 @@ char* presign(const char* hash_algorithm,
   if (query_begin == query_end) {
     detail::write('?', query_stream);
   }
-  write_signed_params(hash_algorithm, access_key_id,
-                     region, service, date, expiration,
-                     canonical_header0, canonical_headerN, query_stream);
+  detail::write_signed_params(hash_algorithm, access_key_id,
+                              region, service, date, expiration,
+                              canonical_header0, canonical_headerN,
+                              query_stream);
 
   // generate the signing key
   unsigned char signing_key[detail::hmac::max_size];
